@@ -929,7 +929,6 @@ async function registrarAsistencia(qrData) {
       fecha: new Date().toISOString().split("T")[0],
       estado: 'presente',
       hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      observaciones: '',
       createdAt: new Date()
     };
 
