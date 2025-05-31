@@ -459,28 +459,28 @@ function filtrarAsistencias() {
     actualizarTablaAsistencias();
 }
 
-function actualizarEstadisticas(asistencias) {
-    const total = asistencias.length;
-    const presentes = asistencias.filter(a => a.estado === 'presente').length;
-    const tardes = asistencias.filter(a => a.estado === 'tarde').length;
-    const ausentes = asistencias.filter(a => a.estado === 'ausente').length;
+// function actualizarEstadisticas(asistencias) {
+//     const total = asistencias.length;
+//     const presentes = asistencias.filter(a => a.estado === 'presente').length;
+//     const tardes = asistencias.filter(a => a.estado === 'tarde').length;
+//     const ausentes = asistencias.filter(a => a.estado === 'ausente').length;
     
-    // Actualizar elementos de estadísticas con verificación
-    const totalAlumnos = getElementSafely('totalAlumnos');
-    const totalPresentes = getElementSafely('totalPresentes');
-    //const totalTardes = getElementSafely('totalTardes');
-    const totalAusentes = getElementSafely('totalAusentes');
-    const porcentajeAsistencia = getElementSafely('porcentajeAsistencia');
+//     // Actualizar elementos de estadísticas con verificación
+//     const totalAlumnos = getElementSafely('totalAlumnos');
+//     const totalPresentes = getElementSafely('totalPresentes');
+//     //const totalTardes = getElementSafely('totalTardes');
+//     const totalAusentes = getElementSafely('totalAusentes');
+//     const porcentajeAsistencia = getElementSafely('porcentajeAsistencia');
     
-    if (totalAlumnos) totalAlumnos.textContent = total;
-    if (totalPresentes) totalPresentes.textContent = presentes;
-    //if (totalTardes) totalTardes.textContent = tardes;
-    if (totalAusentes) totalAusentes.textContent = ausentes;
+//     if (totalAlumnos) totalAlumnos.textContent = total;
+//     if (totalPresentes) totalPresentes.textContent = presentes;
+//     //if (totalTardes) totalTardes.textContent = tardes;
+//     if (totalAusentes) totalAusentes.textContent = ausentes;
     
-    // Calcular porcentajes
-    const porcentaje = total > 0 ? Math.round(((presentes + tardes) / total) * 100) : 0;
-    if (porcentajeAsistencia) porcentajeAsistencia.textContent = `${porcentaje}%`;
-}
+//     // Calcular porcentajes
+//     const porcentaje = total > 0 ? Math.round(((presentes + tardes) / total) * 100) : 0;
+//     if (porcentajeAsistencia) porcentajeAsistencia.textContent = `${porcentaje}%`;
+// }
 
 // Funciones del modal
 function abrirModal(titulo, datos = null) {
