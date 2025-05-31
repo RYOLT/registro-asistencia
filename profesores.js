@@ -713,8 +713,8 @@ window.addEventListener('beforeunload', function() {
 });
 
 window.mostrarTab = mostrarTab;
-indow.agregarAsistencia = agregarAsistencia;
-indow.agregarAsistenciaAlumno = agregarAsistenciaAlumno;
+window.agregarAsistencia = agregarAsistencia;
+window.agregarAsistenciaAlumno = agregarAsistenciaAlumno;
 window.editarAsistencia = editarAsistencia;
 window.eliminarAsistencia = eliminarAsistencia;
 
