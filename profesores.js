@@ -1,3 +1,8 @@
+import { auth, db } from "./firebase.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-auth.js";
+import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js";
+
+
 // Variables globales
 let asistenciasData = [];
 let alumnosData = [];
@@ -437,50 +442,31 @@ function crearFilaAsistencia(asistencia, tieneRegistro) {
     return row;
 }
 
-// function filtrarAsistenciasData() {
-//     const filtroFecha = getElementSafely('filtroFecha');
-//     const filtroClase = getElementSafely('filtroClase');
-//     const filtroEstado = getElementSafely('filtroEstado');
-    
-//     const fechaValue = filtroFecha ? filtroFecha.value : '';
-//     const claseValue = filtroClase ? filtroClase.value : '';
-//     const estadoValue = filtroEstado ? filtroEstado.value : '';
-    
-//     return asistenciasData.filter(asistencia => {
-//         const coincideFecha = !fechaValue || asistencia.fecha === fechaValue;
-//         const coincideClase = !claseValue || asistencia.clase === claseValue;
-//         const coincideEstado = !estadoValue || asistencia.estado === estadoValue;
-        
-//         return coincideFecha && coincideClase && coincideEstado;
-//     });
-// }
 
 function filtrarAsistencias() {
     actualizarTablaAsistencias();
 }
 
-// function actualizarEstadisticas(asistencias) {
-//     const total = asistencias.length;
-//     const presentes = asistencias.filter(a => a.estado === 'presente').length;
-//     const tardes = asistencias.filter(a => a.estado === 'tarde').length;
-//     const ausentes = asistencias.filter(a => a.estado === 'ausente').length;
-    
-//     // Actualizar elementos de estadísticas con verificación
-//     const totalAlumnos = getElementSafely('totalAlumnos');
-//     const totalPresentes = getElementSafely('totalPresentes');
-//     //const totalTardes = getElementSafely('totalTardes');
-//     const totalAusentes = getElementSafely('totalAusentes');
-//     const porcentajeAsistencia = getElementSafely('porcentajeAsistencia');
-    
-//     if (totalAlumnos) totalAlumnos.textContent = total;
-//     if (totalPresentes) totalPresentes.textContent = presentes;
-//     //if (totalTardes) totalTardes.textContent = tardes;
-//     if (totalAusentes) totalAusentes.textContent = ausentes;
-    
-//     // Calcular porcentajes
-//     const porcentaje = total > 0 ? Math.round(((presentes + tardes) / total) * 100) : 0;
-//     if (porcentajeAsistencia) porcentajeAsistencia.textContent = `${porcentaje}%`;
-// }
+function agregarAsistencia() {
+    // Abrir el modal para agregar asistencia
+    abrirModal("Agregar Asistencia");
+
+    // Limpiar los campos del modal
+    const modalAlumno = getElementSafely('modalAlumno');
+    const modalFecha = getElementSafely('modalFecha');
+    const modalClase = getElementSafely('modalClase');
+    const modalEstado = getElementSafely('modalEstado');
+    const modalHora = getElementSafely('modalHora');
+    const modalObservaciones = getElementSafely('modalObservaciones');
+
+    if (modalAlumno) modalAlumno.value = '';
+    if (modalFecha) modalFecha.value = '';
+    if (modalClase) modalClase.value = '';
+    if (modalEstado) modalEstado.value = 'presente'; // Estado por defecto
+    if (modalHora) modalHora.value = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    if (modalObservaciones) modalObservaciones.value = '';
+}
+
 
 // Funciones del modal
 function abrirModal(titulo, datos = null) {
@@ -724,61 +710,61 @@ window.addEventListener('beforeunload', function() {
 });
 
 window.mostrarTab = mostrarTab;
-window.agregarAsistencia = agregarAsistencia;
-window.agregarAsistenciaAlumno = agregarAsistenciaAlumno;
+indow.agregarAsistencia = agregarAsistencia;
+indow.agregarAsistenciaAlumno = agregarAsistenciaAlumno;
 window.editarAsistencia = editarAsistencia;
 window.eliminarAsistencia = eliminarAsistencia;
 
-// function actualizarTablaAsistencias() {
-//     const tbody = getElementSafely('tablaAsistencias');
-//     if (!tbody) return;
-    
-//     tbody.innerHTML = '';
-    
-//     // Aplicar filtros
-//     const asistenciasFiltradas = filtrarAsistenciasData();
-    
-//     // Crear mapa de alumnos con asistencia registrada
-//     const alumnosConAsistencia = asistenciasFiltradas.map(a => a.alumno);
-    
-//     // Mostrar alumnos con asistencia
-//     asistenciasFiltradas.forEach(asistencia => {
-//         const row = crearFilaAsistencia(asistencia, true);
-//         tbody.appendChild(row);
-//     });
-    
-//     // Mostrar alumnos sin asistencia (solo si no hay filtros específicos)
-//     const filtroFecha = getElementSafely('filtroFecha');
-//     const filtroClase = getElementSafely('filtroClase');
-//     const filtroEstado = getElementSafely('filtroEstado');
-    
-//     const fechaValue = filtroFecha ? filtroFecha.value : '';
-//     const claseValue = filtroClase ? filtroClase.value : '';
-//     const estadoValue = filtroEstado ? filtroEstado.value : '';
-    
-//     if (fechaValue && !estadoValue) {
-//         const claseParaFiltro = claseValue || obtenerClaseActual().materia;
-        
-//         alumnosEjemplo.forEach(alumno => {
-//             if (!alumnosConAsistencia.includes(alumno.nombre) && claseParaFiltro !== "Sin clases") {
-//                 const asistenciaVacia = {
-//                     id: null,
-//                     alumno: alumno.nombre,
-//                     fecha: fechaValue,
-//                     clase: claseParaFiltro,
-//                     estado: "ausente",
-//                     hora: "N/A",
-//                     observaciones: "Sin registro"
-//                 };
-//                 const row = crearFilaAsistencia(asistenciaVacia, false);
-//                 tbody.appendChild(row);
-//             }
-//         });
-//     }
-    
-//     // Actualizar estadísticas
-//     actualizarEstadisticas(asistenciasFiltradas);
-// }
+//function actualizarTablaAsistencias() {
+//   const tbody = getElementSafely('tablaAsistencias');
+//  if (!tbody) return;
+// 
+//    tbody.innerHTML = '';
+// 
+//    // Aplicar filtros
+//    const asistenciasFiltradas = filtrarAsistenciasData();
+// 
+//    // Crear mapa de alumnos con asistencia registrada
+//    const alumnosConAsistencia = asistenciasFiltradas.map(a => a.alumno);
+// 
+//    // Mostrar alumnos con asistencia
+//    asistenciasFiltradas.forEach(asistencia => {
+//        const row = crearFilaAsistencia(asistencia, true);
+//        tbody.appendChild(row);
+//    });
+// 
+//    // Mostrar alumnos sin asistencia (solo si no hay filtros específicos)
+//    const filtroFecha = getElementSafely('filtroFecha');
+//    const filtroClase = getElementSafely('filtroClase');
+//    const filtroEstado = getElementSafely('filtroEstado');
+// 
+//    const fechaValue = filtroFecha ? filtroFecha.value : '';
+//    const claseValue = filtroClase ? filtroClase.value : '';
+//    const estadoValue = filtroEstado ? filtroEstado.value : '';
+//
+//    if (fechaValue && !estadoValue) {
+//        const claseParaFiltro = claseValue || obtenerClaseActual().materia;
+//     
+//        alumnosEjemplo.forEach(alumno => {
+//            if (!alumnosConAsistencia.includes(alumno.nombre) && claseParaFiltro !== "Sin clases") {
+//                const asistenciaVacia = {
+//                    id: null,
+//                    alumno: alumno.nombre,
+//                    fecha: fechaValue,
+//                    clase: claseParaFiltro,
+//                    estado: "ausente",
+//                    hora: "N/A",
+//                    observaciones: "Sin registro"
+//                };
+//                const row = crearFilaAsistencia(asistenciaVacia, false);
+//                tbody.appendChild(row);
+//            }
+//       });
+//    }
+// 
+//   // Actualizar estadísticas
+//    actualizarEstadisticas(asistenciasFiltradas);
+//}
 
 async function cargarAsistencias() {
     try {
@@ -804,67 +790,52 @@ function filtrarAsistenciasData() {
     const filtroEstado = getElementSafely('filtroEstado') 
     const fechaValue = filtroFecha ? filtroFecha.value : '';
     const claseValue = filtroClase ? filtroClase.value : '';
-    const estadoValue = filtroEstado ? filtroEstado.value : '' 
+    const estadoValue = filtroEstado ? filtroEstado.value : '';
+
     return asistenciasData.filter(asistencia => {
+
         const coincideFecha = !fechaValue || asistencia.fecha === fechaValue;
         const coincideClase = !claseValue || asistencia.clase === claseValue;
-        const coincideEstado = !estadoValue || asistencia.estado === estadoValue     
+        const coincideEstado = !estadoValue || asistencia.estado === estadoValue    
+
         return coincideFecha && coincideClase && coincideEstado;
     });
 }
 
 
-function actualizarTablaAsistencias() {
-    const tbody = getElementSafely('bodyAsistencias');
-    if (!tbody) return;
+ function actualizarTablaAsistencias() {
+     const tbody = getElementSafely('bodyAsistencias');
+     if (!tbody) return;
 
-    tbody.innerHTML = '';
+     tbody.innerHTML = '';
 
-    // Aplicar filtros
-    const asistenciasFiltradas = filtrarAsistenciasData();
+     // Aplicar filtros
+     const asistenciasFiltradas = filtrarAsistenciasData();
 
-    // Contadores para estadísticas
-    let total = asistenciasFiltradas.length;
-    let presentes = 0;
-    let ausentes = 0;
-    let tardes = 0;
+     // Contadores para estadísticas
+     let total = asistenciasFiltradas.length;
+     let presentes = 0;
+     let ausentes = 0;
+     let tardes = 0;
 
-    // Mostrar alumnos con asistencia
-    asistenciasFiltradas.forEach(asistencia => {
-        const row = crearFilaAsistencia(asistencia, true);
-        tbody.appendChild(row);
+     // Mostrar alumnos con asistencia
+     asistenciasFiltradas.forEach(asistencia => {
+         const row = crearFilaAsistencia(asistencia, true);
+         tbody.appendChild(row);
 
-        // Contar presentes, ausentes y tardes
-        if (asistencia.estado === 'presente') {
-            presentes++;
-        } else if (asistencia.estado === 'ausente') {
-            ausentes++;
-        } else if (asistencia.estado === 'tarde') {
-            tardes++;
-        }
-    });
+         // Contar presentes, ausentes y tardes
+         if (asistencia.estado === 'presente') {
+             presentes++;
+         } else if (asistencia.estado === 'ausente') {
+             ausentes++;
+         } else if (asistencia.estado === 'tarde') {
+             tardes++;
+         }
+     });
 
-    // Actualizar estadísticas
-    actualizarEstadisticas(total, presentes, ausentes, tardes);
-}
-
-// function filtrarAsistenciasData() {
-//     const filtroFecha = getElementSafely('filtroFecha');
-//     const filtroClase = getElementSafely('filtroClase');
-//     const filtroEstado = getElementSafely('filtroEstado');
-    
-//     const fechaValue = filtroFecha ? filtroFecha.value : '';
-//     const claseValue = filtroClase ? filtroClase.value : '';
-//     const estadoValue = filtroEstado ? filtroEstado.value : '';
-
-//     return asistenciasData.filter(asistencia => {
-//         const coincideFecha = !fechaValue || asistencia.fecha === fechaValue;
-//         const coincideClase = !claseValue || asistencia.clase === claseValue;
-//         const coincideEstado = !estadoValue || asistencia.estado === estadoValue;
-        
-//         return coincideFecha && coincideClase && coincideEstado;
-//     });
-// }
+     // Actualizar estadísticas
+     actualizarEstadisticas(total, presentes, ausentes, tardes);
+ }
 
 function actualizarEstadisticas(total, presentes, ausentes, tardes) {
     const totalAlumnos = getElementSafely('totalAlumnos');
@@ -887,4 +858,3 @@ function actualizarEstadisticas(total, presentes, ausentes, tardes) {
 //    window.onload = () => {
 //      actualizarTablaAsistenciasProfesor();
 //    };
-   
