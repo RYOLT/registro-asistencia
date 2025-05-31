@@ -34,7 +34,7 @@ const horariosClases = {
         "18:50-20:30": { materia: "Ingles 4 ", profesor: "Prof. Juan" },
     },
   "Sábado": {
-    "09:20-15:00": "M3S1"}
+    "09:20-20:00": "M3S1"}
 };
 
 // Lista de alumnos de ejemplo
