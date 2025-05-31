@@ -33,8 +33,9 @@ const horariosClases = {
         "17:10-18:50": { materia: "Reacciones Quimicas", profesor: "Profa. Estela" },
         "18:50-20:30": { materia: "Ingles 4 ", profesor: "Prof. Juan" },
     },
-  "Sábado": {
-    "09:20-20:00": "M3S1"}
+    "Sábado": {
+        "09:20-19:00": { materia: "Pruebas", profesor: "Profa. Yo" }
+    }
 };
 
 // Lista de alumnos de ejemplo
@@ -48,7 +49,7 @@ const alumnosEjemplo = [
     { id: "7", nombre: "Márquez Hernández Ángel Josué" },
     { id: "8", nombre: "Mendazo Razo Vicente Kevin de Jesús" },
     { id: "9", nombre: "Montes Sandoval Fabián" },
-    { id: "10", nombre: "PAredes Reyes Sven Farid" },
+    { id: "10", nombre: "Paredes Reyes Sven Farid" },
     { id: "11", nombre: "Quintanal Gonzáles Francisco" },
     { id: "12", nombre: "Ramírez Jasso Angie" },
     { id: "13", nombre: "Rosas Gonzáles Brandon Eduardo" },
@@ -178,33 +179,33 @@ function generarDatosEjemplo() {
     const claseActual = obtenerClaseActual();
     
     asistenciasData = [
-        {
-            id: Date.now() + 1,
-            alumno: "Juan Pérez González",
-            fecha: fechaHoy,
-            clase: claseActual.materia !== "Sin clases" ? claseActual.materia : "M3S3",
-            estado: "presente",
-            hora: "14:25",
-            observaciones: ""
-        },
-        {
-            id: Date.now() + 2,
-            alumno: "María García López",
-            fecha: fechaHoy,
-            clase: claseActual.materia !== "Sin clases" ? claseActual.materia : "M3S3",
-            estado: "presente",
-            hora: "14:22",
-            observaciones: ""
-        },
-        {
-            id: Date.now() + 3,
-            alumno: "Carlos Rodríguez Martín",
-            fecha: fechaHoy,
-            clase: claseActual.materia !== "Sin clases" ? claseActual.materia : "M3S3",
-            estado: "tarde",
-            hora: "14:35",
-            observaciones: "Llegó 15 minutos tarde"
-        }
+        // {
+        //     id: Date.now() + 1,
+        //     alumno: "Juan Pérez González",
+        //     fecha: fechaHoy,
+        //     clase: claseActual.materia !== "Sin clases" ? claseActual.materia : "M3S3",
+        //     estado: "presente",
+        //     hora: "14:25",
+        //     observaciones: ""
+        // },
+        // {
+        //     id: Date.now() + 2,
+        //     alumno: "María García López",
+        //     fecha: fechaHoy,
+        //     clase: claseActual.materia !== "Sin clases" ? claseActual.materia : "M3S3",
+        //     estado: "presente",
+        //     hora: "14:22",
+        //     observaciones: ""
+        // },
+        // {
+        //     id: Date.now() + 3,
+        //     alumno: "Carlos Rodríguez Martín",
+        //     fecha: fechaHoy,
+        //     clase: claseActual.materia !== "Sin clases" ? claseActual.materia : "M3S3",
+        //     estado: "tarde",
+        //     hora: "14:35",
+        //     observaciones: "Llegó 15 minutos tarde"
+        // }
     ];
     
     actualizarTablaAsistencias();

@@ -51,7 +51,8 @@ const horariosClases = {
     "18:50-20:30": "Ingles",
   },
   "Sábado": {
-    "09:20-20:00": "M3S1"}
+    "09:20-19:00": "Pruebas"
+  }
 
 };
 
