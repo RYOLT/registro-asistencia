@@ -798,6 +798,22 @@ async function cargarAsistencias() {
     }
 }
 
+function filtrarAsistenciasData() {
+    const filtroFecha = getElementSafely('filtroFecha');
+    const filtroClase = getElementSafely('filtroClase');
+    const filtroEstado = getElementSafely('filtroEstado') 
+    const fechaValue = filtroFecha ? filtroFecha.value : '';
+    const claseValue = filtroClase ? filtroClase.value : '';
+    const estadoValue = filtroEstado ? filtroEstado.value : '' 
+    return asistenciasData.filter(asistencia => {
+        const coincideFecha = !fechaValue || asistencia.fecha === fechaValue;
+        const coincideClase = !claseValue || asistencia.clase === claseValue;
+        const coincideEstado = !estadoValue || asistencia.estado === estadoValue     
+        return coincideFecha && coincideClase && coincideEstado;
+    });
+}
+
+
 function actualizarTablaAsistencias() {
     const tbody = getElementSafely('bodyAsistencias');
     if (!tbody) return;
@@ -832,23 +848,23 @@ function actualizarTablaAsistencias() {
     actualizarEstadisticas(total, presentes, ausentes, tardes);
 }
 
-function filtrarAsistenciasData() {
-    const filtroFecha = getElementSafely('filtroFecha');
-    const filtroClase = getElementSafely('filtroClase');
-    const filtroEstado = getElementSafely('filtroEstado');
+// function filtrarAsistenciasData() {
+//     const filtroFecha = getElementSafely('filtroFecha');
+//     const filtroClase = getElementSafely('filtroClase');
+//     const filtroEstado = getElementSafely('filtroEstado');
     
-    const fechaValue = filtroFecha ? filtroFecha.value : '';
-    const claseValue = filtroClase ? filtroClase.value : '';
-    const estadoValue = filtroEstado ? filtroEstado.value : '';
+//     const fechaValue = filtroFecha ? filtroFecha.value : '';
+//     const claseValue = filtroClase ? filtroClase.value : '';
+//     const estadoValue = filtroEstado ? filtroEstado.value : '';
 
-    return asistenciasData.filter(asistencia => {
-        const coincideFecha = !fechaValue || asistencia.fecha === fechaValue;
-        const coincideClase = !claseValue || asistencia.clase === claseValue;
-        const coincideEstado = !estadoValue || asistencia.estado === estadoValue;
+//     return asistenciasData.filter(asistencia => {
+//         const coincideFecha = !fechaValue || asistencia.fecha === fechaValue;
+//         const coincideClase = !claseValue || asistencia.clase === claseValue;
+//         const coincideEstado = !estadoValue || asistencia.estado === estadoValue;
         
-        return coincideFecha && coincideClase && coincideEstado;
-    });
-}
+//         return coincideFecha && coincideClase && coincideEstado;
+//     });
+// }
 
 function actualizarEstadisticas(total, presentes, ausentes, tardes) {
     const totalAlumnos = getElementSafely('totalAlumnos');
