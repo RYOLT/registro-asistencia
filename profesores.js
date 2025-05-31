@@ -530,109 +530,81 @@ function cerrarModal() {
     if (modal) modal.style.display = 'none';
 }
 
-function agregarAsistencia() {
-    const claseActual = obtenerClaseActual();
-    const fechaHoy = new Date().toISOString().split('T')[0];
-    
-    abrirModal('Agregar Asistencia', {
-        alumno: '',
-        fecha: fechaHoy,
-        clase: claseActual.materia !== "Sin clases" ? claseActual.materia : '',
-        estado: 'presente',
-        hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        observaciones: ''
-    });
-}
-
-function agregarAsistenciaAlumno(alumno, fecha, clase) {
-    abrirModal('Agregar Asistencia', {
-        alumno: alumno,
-        fecha: fecha,
-        clase: clase,
-        estado: 'presente',
-        hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        observaciones: ''
-    });
-}
-
-function editarAsistencia(id) {
-    const asistencia = asistenciasData.find(a => a.id === id);
-    if (asistencia) {
-        abrirModal('Editar Asistencia', asistencia);
-    }
-}
-
-function eliminarAsistencia(id) {
-    if (confirm('¿Estás seguro de que deseas eliminar esta asistencia?')) {
-        asistenciasData = asistenciasData.filter(a => a.id !== id);
-        actualizarTablaAsistencias();
-        mostrarNotificacion('Asistencia eliminada correctamente', 'success');
-    }
-}
-
 async function guardarAsistencia() {
-  const modalAlumno = getElementSafely('modalAlumno');
-  const modalFecha = getElementSafely('modalFecha');
-  const modalClase = getElementSafely('modalClase');
-  const modalEstado = getElementSafely('modalEstado');
-  const modalHora = getElementSafely('modalHora');
-  const modalObservaciones = getElementSafely('modalObservaciones');
-  const guardarBtn = getElementSafely('guardarAsistencia');
-  
-  if (!modalAlumno || !modalFecha || !modalClase) {
-    alert('Error: No se pudieron encontrar todos los campos del formulario');
-    return;
-  }
-  
-  const alumno = modalAlumno.value;
-  const fecha = modalFecha.value;
-  const clase = modalClase.value;
-  const estado = modalEstado ? modalEstado.value : 'presente';
-  const hora = modalHora ? modalHora.value : '';
-  const observaciones = modalObservaciones ? modalObservaciones.value : '';
-  
-  if (!alumno || !fecha || !clase) {
-    alert('Por favor completa todos los campos obligatorios');
-    return;
-  }
-  
-  const id = guardarBtn ? guardarBtn.dataset.id : null;
-  
-  if (id) {
-    // Editar asistencia existente
-    const index = asistenciasData.findIndex(a => a.id == id);
-    if (index !== -1) {
-      asistenciasData[index] = {
-        id: parseInt(id),
-        alumno,
-        fecha,
-        clase,
-        estado,
-        hora: hora || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        observaciones
-      };
-      await addDoc(collection(db, "asistencias"), asistenciasData[index]); // Guardar en Firestore
-      mostrarNotificacion('Asistencia actualizada correctamente', 'success');
+    const modalAlumno = getElementSafely('modalAlumno');
+    const modalFecha = getElementSafely('modalFecha');
+    const modalClase = getElementSafely('modalClase');
+    const modalEstado = getElementSafely('modalEstado');
+    const modalHora = getElementSafely('modalHora');
+    const modalObservaciones = getElementSafely('modalObservaciones');
+    const guardarBtn = getElementSafely('guardarAsistencia');
+
+    // Validar que los campos necesarios estén presentes
+    if (!modalAlumno || !modalFecha || !modalClase) {
+        alert('Error: No se pudieron encontrar todos los campos del formulario');
+        return;
     }
-  } else {
-    // Agregar nueva asistencia
-    const nuevaAsistencia = {
-      id: Date.now(),
-      alumno,
-      fecha,
-      clase,
-      estado,
-      hora: hora || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      observaciones
-    };
-    asistenciasData.push(nuevaAsistencia);
-    await addDoc(collection(db, "asistencias"), nuevaAsistencia); // Guardar en Firestore
-    mostrarNotificacion('Asistencia agregada correctamente', 'success');
-  }
-  
-  cerrarModal();
-  actualizarTablaAsistenciasProfesor(); // Actualizar la tabla de asistencias
+
+    const alumno = modalAlumno.value;
+    const fecha = modalFecha.value;
+    const clase = modalClase.value;
+    const estado = modalEstado ? modalEstado.value : 'presente';
+    const hora = modalHora ? modalHora.value : new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const observaciones = modalObservaciones ? modalObservaciones.value : '';
+
+    // Validar que los campos obligatorios estén completos
+    if (!alumno || !fecha || !clase) {
+        alert('Por favor completa todos los campos obligatorios');
+        return;
+    }
+
+    const id = guardarBtn ? guardarBtn.dataset.id : null;
+
+    try {
+        if (id) {
+            // Editar asistencia existente
+            const index = asistenciasData.findIndex(a => a.id == id);
+            if (index !== -1) {
+                // Actualizar el objeto en el array
+                asistenciasData[index] = {
+                    id: parseInt(id),
+                    alumno,
+                    fecha,
+                    clase,
+                    estado,
+                    hora,
+                    observaciones
+                };
+                // Actualizar en Firestore
+                await updateDoc(doc(db, "asistencias", id), asistenciasData[index]);
+                mostrarNotificacion('Asistencia actualizada correctamente', 'success');
+            }
+        } else {
+            // Agregar nueva asistencia
+            const nuevaAsistencia = {
+                alumno,
+                fecha,
+                clase,
+                estado,
+                hora,
+                observaciones,
+                createdAt: new Date() // Agregar la fecha de creación
+            };
+            // Guardar en Firestore
+            const docRef = await addDoc(collection(db, "asistencias"), nuevaAsistencia);
+            nuevaAsistencia.id = docRef.id; // Agregar el ID del documento a la asistencia
+            asistenciasData.push(nuevaAsistencia); // Agregar a la lista de asistencias
+            mostrarNotificacion('Asistencia agregada correctamente', 'success');
+        }
+
+        cerrarModal();
+        actualizarTablaAsistencias(); // Actualizar la tabla de asistencias
+    } catch (error) {
+        console.error('Error guardando la asistencia:', error);
+        mostrarNotificacion('Fallo al registrar asistencia: ' + error.message, 'error');
+    }
 }
+
 
 
 
