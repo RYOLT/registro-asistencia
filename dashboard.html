@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistencias-App</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+
+</head>
+<body>
+    <div id="infoAlumno"></div>
+
+    <div id="contenidoAlumno" style="display:none;">
+        <h3>Mis Asistencias</h3>
+        <ul id="listaAsistencias"></ul>
+    </div>
+
+    <div id="contProfe" style="display:none;">
+        <h3>Asistencia de Alumnos</h3>
+        <ul id="listasProfesor"></ul>
+    </div>
+
+    <div id="qrCodeContainer" style="display:none;">
+        <h3>Escanea el código QR</h3>
+           <button onclick="leerQR()">Leer Código QR</button>
+        <div id="qrcode"></div>
+    </div>
+    
+    <button id="logoutBtn">Cerrar sesión</button>
+
+    <script type="module" src="dash.js"></script>
+</body>
+</html>

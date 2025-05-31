@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - Profesores</title>
+    <link rel="stylesheet" href="styless.css">
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> Panel de Control - Profesores</h1>
+            <p id="profesorNombre">Cargando...</p>
+            <button id="logoutBtn"> Cerrar Sesión</button>
+        </div>
+
+        <!-- Información de clase actual -->
+        <div class="clase-actual">
+            <h3> Clase Actual</h3>
+            <div class="clase-info">
+                <div class="info-item">
+                    <strong>Materia:</strong>
+                    <div id="materiaActual">Cargando...</div>
+                </div>
+                <div class="info-item">
+                    <strong>Profesor:</strong>
+                    <div id="profesorActual">Cargando...</div>
+                </div>
+                <div class="info-item">
+                    <strong>Horario:</strong>
+                    <div id="horarioActual">Cargando...</div>
+                </div>
+                <div class="info-item">
+                    <strong>Tiempo Restante:</strong>
+                    <div class="timer" id="timerClase">00:00:00</div>
+                </div>
+            </div>
+            <div id="estadoClase" style="font-size: 1.1rem; margin-top: 10px;"></div>
+        </div>
+
+        <!-- Pestañas de navegación -->
+        <div class="tabs">
+            <button class="tab active" onclick="mostrarTab('asistencias')"> Control de Asistencias</button>
+            <button class="tab" onclick="mostrarTab('horarios')"> Horarios y Clases</button>
+        </div>
+
+        <!-- Contenido de las pestañas -->
+
+        <!-- Pestaña de Asistencias -->
+        <div id="asistencias" class="tab-content active">
+            <h2> Control de Asistencias</h2>
+
+            <!-- Filtros -->
+            <div class="filtros">
+                <h4> Filtros</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha:</label>
+                        <input type="date" id="filtroFecha">
+                    </div>
+                    <div class="form-group">
+                        <label>Clase:</label>
+                        <select id="filtroClase">
+                            <option value="">Todas las clases</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado:</label>
+                        <select id="filtroEstado">
+                            <option value="">Todos</option>
+                            <option value="presente">Presentes</option>
+                            <option value="ausente">Ausentes</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen de asistencias -->
+            <div class="form-container">
+                <h4> Resumen de Hoy</h4>
+                <div class="info-item" style="background: #fff3cd; color: #856404;">
+    <strong>Tardes:</strong>
+    <div id="totalTardes" style="font-size: 1.5rem;">0</div>
+</div><br>
+
+<div class="info-item" style="background: #e2e3e5; color: #383d41;">
+    <strong>% Asistencia:</strong>
+    <div id="porcentajeAsistencia" style="font-size: 1.5rem;">0%</div>
+</div><br>
+
+                <div class="form-row">
+                    <div class="info-item" style="background: #d4edda; color: #155724;">
+                        <strong>Presentes:</strong>
+                        <div id="totalPresentes" style="font-size: 1.5rem;">0</div>
+                    </div>
+                    <div class="info-item" style="background: #f8d7da; color: #721c24;">
+                        <strong>Ausentes:</strong>
+                        <div id="totalAusentes" style="font-size: 1.5rem;">0</div>
+                    </div>
+                    <div class="info-item" style="background: #cce5ff; color: #004085;">
+                        <strong>Total Alumnos:</strong>
+                        <div id="totalAlumnos" style="font-size: 1.5rem;">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de asistencias -->
+            <div class="table-container">
+                <table id="tablaAsistencias">
+                    <thead>
+                        <tr>
+                            <th>Alumno</th>
+                            <th>Clase</th>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyAsistencias">
+                        <tr>
+                            <td colspan="6" class="loading">
+                                <div class="spinner"></div>
+                                Cargando asistencias...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h2>Lista de Asistencias Registradas</h2>
+    <ul id="listasProfesor" style="list-style-type:none; padding:0; max-height:300px; overflow-y:auto; border:1px solid #ccc; border-radius:5px;">
+        <!-- Las asistencias se irán agregando aquí dinámicamente -->
+    </ul>
+
+        <!-- Pestaña de Horarios -->
+        <div id="horarios" class="tab-content">
+            <h2> Horarios y Clases</h2>
+            <div id="horariosContainer" style="margin-bottom: 20px;"></div>
+
+            <div class="table-container">
+                <table id="tablaHorarios">
+                    <thead>
+                        <tr>
+                            <th>Día</th>
+                            <th>Horario</th>
+                            <th>Materia</th>
+                            <th>Profesor</th>
+                            <th>Duración</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyHorarios">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal para agregar/editar asistencia -->
+    <div id="modalAsistencia" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal()">&times;</span>
+            <h3 id="tituloModal">Agregar Asistencia Manual</h3>
+
+            <div class="form-group">
+                <label>Alumno:</label>
+                <select id="modalAlumno">
+                    <option value="">Seleccionar alumno...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Clase:</label>
+                <select id="modalClase">
+                    <option value="">Seleccionar clase...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fecha:</label>
+                <input type="date" id="modalFecha">
+            </div>
+
+            <div class="form-group">
+                <label>Hora:</label>
+                <input type="time" id="modalHora">
+            </div>
+
+            <div style="text-align: right; margin-top: 20px;">
+                <button class="btn btn-add" onclick="guardarAsistencia()"> Guardar</button>
+                <button class="btn" onclick="cerrarModal()" style="background: #6c757d; color: white;">❌ Cancelar</button>
+            </div>
+
+            <!-- Botones ocultos requeridos por JS -->
+                <button id="guardarAsistencia" style="display: none;"></button>
+                <button id="cancelarModal" style="display: none;"></button>
+
+        </div>
+    </div>
+        <script type="module" src="profesores.js"></script>
+</body>
+</html>
