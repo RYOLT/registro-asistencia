@@ -390,10 +390,10 @@ function iniciarTimer() {
     }, 1000);
 }
 
-function cargarAsistencias() {
-    // En una aplicación real, esto cargaría desde Firebase
-    actualizarTablaAsistencias();
-}
+// function cargarAsistencias() {
+//     // En una aplicación real, esto cargaría desde Firebase
+//     actualizarTablaAsistencias();
+// }
 
 function crearFilaAsistencia(asistencia, tieneRegistro) {
     const row = document.createElement('tr');
@@ -534,7 +534,7 @@ async function guardarAsistencia() {
     const modalAlumno = getElementSafely('modalAlumno');
     const modalFecha = getElementSafely('modalFecha');
     const modalClase = getElementSafely('modalClase');
-    const modalEstado = getElementSafely('modalEstado');
+    //const modalEstado = getElementSafely('modalEstado');
     const modalHora = getElementSafely('modalHora');
     const modalObservaciones = getElementSafely('modalObservaciones');
     const guardarBtn = getElementSafely('guardarAsistencia');
