@@ -370,7 +370,7 @@ function iniciarTimer() {
                 }
                 
                 timerElement.textContent = ` Tiempo restante: ${timerText}`;
-                timerElement.style.color = tiempoRestante < 300000 ? "#e11c1c" : "#000"; // Rojo si quedan menos de 5 minutos
+                timerElement.style.color = tiempoRestante < 300000 ? "#e11c1c" : "#000000"; // Rojo si quedan menos de 5 minutos
             } else {
                 timerElement.textContent = " Clase terminada";
                 timerElement.style.color = "#6c757d";
@@ -760,25 +760,110 @@ window.agregarAsistenciaAlumno = agregarAsistenciaAlumno;
 window.editarAsistencia = editarAsistencia;
 window.eliminarAsistencia = eliminarAsistencia;
 
+// function actualizarTablaAsistencias() {
+//     const tbody = getElementSafely('tablaAsistencias');
+//     if (!tbody) return;
+    
+//     tbody.innerHTML = '';
+    
+//     // Aplicar filtros
+//     const asistenciasFiltradas = filtrarAsistenciasData();
+    
+//     // Crear mapa de alumnos con asistencia registrada
+//     const alumnosConAsistencia = asistenciasFiltradas.map(a => a.alumno);
+    
+//     // Mostrar alumnos con asistencia
+//     asistenciasFiltradas.forEach(asistencia => {
+//         const row = crearFilaAsistencia(asistencia, true);
+//         tbody.appendChild(row);
+//     });
+    
+//     // Mostrar alumnos sin asistencia (solo si no hay filtros específicos)
+//     const filtroFecha = getElementSafely('filtroFecha');
+//     const filtroClase = getElementSafely('filtroClase');
+//     const filtroEstado = getElementSafely('filtroEstado');
+    
+//     const fechaValue = filtroFecha ? filtroFecha.value : '';
+//     const claseValue = filtroClase ? filtroClase.value : '';
+//     const estadoValue = filtroEstado ? filtroEstado.value : '';
+    
+//     if (fechaValue && !estadoValue) {
+//         const claseParaFiltro = claseValue || obtenerClaseActual().materia;
+        
+//         alumnosEjemplo.forEach(alumno => {
+//             if (!alumnosConAsistencia.includes(alumno.nombre) && claseParaFiltro !== "Sin clases") {
+//                 const asistenciaVacia = {
+//                     id: null,
+//                     alumno: alumno.nombre,
+//                     fecha: fechaValue,
+//                     clase: claseParaFiltro,
+//                     estado: "ausente",
+//                     hora: "N/A",
+//                     observaciones: "Sin registro"
+//                 };
+//                 const row = crearFilaAsistencia(asistenciaVacia, false);
+//                 tbody.appendChild(row);
+//             }
+//         });
+//     }
+    
+//     // Actualizar estadísticas
+//     actualizarEstadisticas(asistenciasFiltradas);
+// }
+
+async function cargarAsistencias() {
+    try {
+        const querySnapshot = await getDocs(collection(db, "asistencias"));
+        asistenciasData = []; // Limpiar el array de asistencias
+
+        querySnapshot.forEach((doc) => {
+            const asistencia = doc.data();
+            asistencia.id = doc.id; // Agregar el ID del documento
+            asistenciasData.push(asistencia);
+        });
+
+        // Actualizar la tabla de asistencias después de cargar los datos
+        actualizarTablaAsistencias();
+    } catch (error) {
+        console.error("Error cargando asistencias:", error);
+    }
+}
+
 function actualizarTablaAsistencias() {
-    const tbody = getElementSafely('tablaAsistencias');
+    const tbody = getElementSafely('bodyAsistencias');
     if (!tbody) return;
-    
+
     tbody.innerHTML = '';
-    
+
     // Aplicar filtros
     const asistenciasFiltradas = filtrarAsistenciasData();
-    
-    // Crear mapa de alumnos con asistencia registrada
-    const alumnosConAsistencia = asistenciasFiltradas.map(a => a.alumno);
-    
+
+    // Contadores para estadísticas
+    let total = asistenciasFiltradas.length;
+    let presentes = 0;
+    let ausentes = 0;
+    let tardes = 0;
+
     // Mostrar alumnos con asistencia
     asistenciasFiltradas.forEach(asistencia => {
         const row = crearFilaAsistencia(asistencia, true);
         tbody.appendChild(row);
+
+        // Contar presentes, ausentes y tardes
+        if (asistencia.estado === 'presente') {
+            presentes++;
+        } else if (asistencia.estado === 'ausente') {
+            ausentes++;
+        } else if (asistencia.estado === 'tarde') {
+            tardes++;
+        }
     });
-    
-    // Mostrar alumnos sin asistencia (solo si no hay filtros específicos)
+
+    // Actualizar estadísticas
+    actualizarEstadisticas(total, presentes, ausentes, tardes);
+}
+
+function filtrarAsistenciasData() {
     const filtroFecha = getElementSafely('filtroFecha');
     const filtroClase = getElementSafely('filtroClase');
     const filtroEstado = getElementSafely('filtroEstado');
@@ -786,30 +871,33 @@ function actualizarTablaAsistencias() {
     const fechaValue = filtroFecha ? filtroFecha.value : '';
     const claseValue = filtroClase ? filtroClase.value : '';
     const estadoValue = filtroEstado ? filtroEstado.value : '';
-    
-    if (fechaValue && !estadoValue) {
-        const claseParaFiltro = claseValue || obtenerClaseActual().materia;
+
+    return asistenciasData.filter(asistencia => {
+        const coincideFecha = !fechaValue || asistencia.fecha === fechaValue;
+        const coincideClase = !claseValue || asistencia.clase === claseValue;
+        const coincideEstado = !estadoValue || asistencia.estado === estadoValue;
         
-        alumnosEjemplo.forEach(alumno => {
-            if (!alumnosConAsistencia.includes(alumno.nombre) && claseParaFiltro !== "Sin clases") {
-                const asistenciaVacia = {
-                    id: null,
-                    alumno: alumno.nombre,
-                    fecha: fechaValue,
-                    clase: claseParaFiltro,
-                    estado: "ausente",
-                    hora: "N/A",
-                    observaciones: "Sin registro"
-                };
-                const row = crearFilaAsistencia(asistenciaVacia, false);
-                tbody.appendChild(row);
-            }
-        });
-    }
-    
-    // Actualizar estadísticas
-    actualizarEstadisticas(asistenciasFiltradas);
+        return coincideFecha && coincideClase && coincideEstado;
+    });
 }
+
+function actualizarEstadisticas(total, presentes, ausentes, tardes) {
+    const totalAlumnos = getElementSafely('totalAlumnos');
+    const totalPresentes = getElementSafely('totalPresentes');
+    const totalAusentes = getElementSafely('totalAusentes');
+    const totalTardes = getElementSafely('totalTardes');
+    const porcentajeAsistencia = getElementSafely('porcentajeAsistencia');
+
+    if (totalAlumnos) totalAlumnos.textContent = total;
+    if (totalPresentes) totalPresentes.textContent = presentes;
+    if (totalAusentes) totalAusentes.textContent = ausentes;
+    if (totalTardes) totalTardes.textContent = tardes;
+
+    // Calcular porcentaje de asistencia
+    const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0;
+    if (porcentajeAsistencia) porcentajeAsistencia.textContent = `${porcentaje}%`;
+}
+
 
 //    window.onload = () => {
 //      actualizarTablaAsistenciasProfesor();
