@@ -370,7 +370,7 @@ function iniciarTimer() {
                 }
                 
                 timerElement.textContent = ` Tiempo restante: ${timerText}`;
-                timerElement.style.color = tiempoRestante < 300000 ? "#000" : "#e11c1c"; // Rojo si quedan menos de 5 minutos
+                timerElement.style.color = tiempoRestante < 300000 ? "#e11c1c" : "#000"; // Rojo si quedan menos de 5 minutos
             } else {
                 timerElement.textContent = " Clase terminada";
                 timerElement.style.color = "#6c757d";
@@ -811,7 +811,7 @@ function actualizarTablaAsistencias() {
     actualizarEstadisticas(asistenciasFiltradas);
 }
 
-   window.onload = () => {
-     actualizarTablaAsistenciasProfesor();
-   };
+//    window.onload = () => {
+//      actualizarTablaAsistenciasProfesor();
+//    };
    

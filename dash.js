@@ -478,7 +478,9 @@ function generarQR(userData, container, claseInfo) {
       t: timestamp,               // timestamp exacto
       d: dispositivoId.substring(-8), // últimos 8 chars del dispositivo
       r: randomPadding,           // padding aleatorio para cambiar patrón
-      v: Math.floor(timestamp / 1000) % 100 // versión basada en tiempo
+      v: Math.floor(timestamp / 1000) % 100, // versión basada en tiempo
+      alumno: userData.nombre, // Nombre completo del alumno
+      clase: claseInfo.clase, // Clase actual
     };
     
     // Guardar datos completos para validación
@@ -858,7 +860,7 @@ async function leerQR() {
       // Verificar ubicación antes
       const ubicacion = await verificarUbicacion();
       if (!ubicacion.valida) {
-        alert(`❌ No puedes registrar asistencia desde esta ubicación.\nDistancia: ${ubicacion.distancia}m\nMáximo permitido: ${COORDENADAS_ESCUELA.radio}m`);
+        alert(` No puedes registrar asistencia desde esta ubicación.\nDistancia: ${ubicacion.distancia}m\nMáximo permitido: ${COORDENADAS_ESCUELA.radio}m`);
         return;
       }
       // Leer QR
@@ -869,6 +871,11 @@ async function leerQR() {
         qrData = JSON.parse(qrDataRaw);
       } catch(e) {
         alert("El código QR no contiene datos válidos en formato JSON.");
+        return;
+      }
+
+      if (!qrData.alumno || !qrData.clase) {
+        alert("El código QR no contiene los datos necesarios (alumno y clase).");
         return;
       }
 
@@ -889,17 +896,43 @@ async function leerQR() {
 }
 
 // Función para registrar asistencia en Firestore
+// async function registrarAsistencia(qrData) {
+//   try {
+//     const nuevaAsistencia = {
+//       alumno: qrData.alumno || data.nombreCompleto || "Desconocido",
+//       clase: qrData.clase || data.clase || "Desconocida",
+//       fecha: new Date().toISOString().split("T")[0],
+//       estado: 'presente',
+//       hora: new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'}),
+//       observaciones: '',
+//       createdAt: new Date()
+//     };
+//     await addDoc(collection(db, "asistencias"), nuevaAsistencia);
+//     console.log("Asistencia registrada:", nuevaAsistencia);
+//     return { success: true, message: "Asistencia registrada correctamente." };
+//   } catch (error) {
+//     console.error('Error guardando la asistencia:', error);
+//     return { success: false, message: "Fallo al registrar asistencia: " + error.message };
+//   }
+// }
+
 async function registrarAsistencia(qrData) {
   try {
+    // Validar que qrData contenga los campos necesarios
+    if (!qrData.alumno || !qrData.clase) {
+      return { success: false, message: "El código QR no contiene información válida de alumno o clase." };
+    }
+
     const nuevaAsistencia = {
-      alumno: qrData.alumno || 'Sin nombre',
-      clase: qrData.clase || 'Sin clase',
+      alumno: qrData.alumno, // Usar el nombre del alumno del QR
+      clase: qrData.clase,   // Usar la clase del QR
       fecha: new Date().toISOString().split("T")[0],
       estado: 'presente',
-      hora: new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'}),
+      hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       observaciones: '',
       createdAt: new Date()
     };
+
     await addDoc(collection(db, "asistencias"), nuevaAsistencia);
     console.log("Asistencia registrada:", nuevaAsistencia);
     return { success: true, message: "Asistencia registrada correctamente." };
@@ -908,6 +941,7 @@ async function registrarAsistencia(qrData) {
     return { success: false, message: "Fallo al registrar asistencia: " + error.message };
   }
 }
+
 
 // Función para actualizar la tabla de asistencias en la página de profesores
 async function actualizarTablaAsistenciasProfesor() {
