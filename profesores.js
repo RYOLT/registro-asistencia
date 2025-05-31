@@ -447,25 +447,6 @@ function filtrarAsistencias() {
     actualizarTablaAsistencias();
 }
 
-function agregarAsistencia() {
-    // Abrir el modal para agregar asistencia
-    abrirModal("Agregar Asistencia");
-
-    // Limpiar los campos del modal
-    const modalAlumno = getElementSafely('modalAlumno');
-    const modalFecha = getElementSafely('modalFecha');
-    const modalClase = getElementSafely('modalClase');
-    const modalEstado = getElementSafely('modalEstado');
-    const modalHora = getElementSafely('modalHora');
-    const modalObservaciones = getElementSafely('modalObservaciones');
-
-    if (modalAlumno) modalAlumno.value = '';
-    if (modalFecha) modalFecha.value = '';
-    if (modalClase) modalClase.value = '';
-    if (modalEstado) modalEstado.value = 'presente'; // Estado por defecto
-    if (modalHora) modalHora.value = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-    if (modalObservaciones) modalObservaciones.value = '';
-}
 
 
 // Funciones del modal
@@ -511,6 +492,28 @@ function cerrarModal() {
     const modal = getElementSafely('modalAsistencia');
     if (modal) modal.style.display = 'none';
 }
+
+
+function agregarAsistencia() {
+    // Abrir el modal para agregar asistencia
+    abrirModal("Agregar Asistencia");
+
+    // Limpiar los campos del modal
+    const modalAlumno = getElementSafely('modalAlumno');
+    const modalFecha = getElementSafely('modalFecha');
+    const modalClase = getElementSafely('modalClase');
+    const modalEstado = getElementSafely('modalEstado');
+    const modalHora = getElementSafely('modalHora');
+    const modalObservaciones = getElementSafely('modalObservaciones');
+
+    if (modalAlumno) modalAlumno.value = '';
+    if (modalFecha) modalFecha.value = '';
+    if (modalClase) modalClase.value = '';
+    if (modalEstado) modalEstado.value = 'presente'; // Estado por defecto
+    if (modalHora) modalHora.value = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    if (modalObservaciones) modalObservaciones.value = '';
+}
+
 
 async function guardarAsistencia() {
     const modalAlumno = getElementSafely('modalAlumno');
