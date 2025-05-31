@@ -390,10 +390,6 @@ function iniciarTimer() {
     }, 1000);
 }
 
-// function cargarAsistencias() {
-//     // En una aplicación real, esto cargaría desde Firebase
-//     actualizarTablaAsistencias();
-// }
 
 function crearFilaAsistencia(asistencia, tieneRegistro) {
     const row = document.createElement('tr');
