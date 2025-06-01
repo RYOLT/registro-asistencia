@@ -43,9 +43,6 @@ const horariosClases = {
         "14:10-16:40": { materia: "M3S2", profesor: "Profa. Dalia" },
         "17:10-18:50": { materia: "Reacciones Quimicas", profesor: "Profa. Estela" },
         "18:50-20:30": { materia: "Ingles 4 ", profesor: "Prof. Juan" },
-    },
-    "Sábado,Domingo": {
-        "09:20-02:00": { materia: "Pruebas", profesor: "Profa. Yo" }
     }
 };
 
@@ -1107,9 +1104,9 @@ function marcarAusentesFinClase() {
     
     const confirmacion = confirm(
         `¿Deseas marcar como ausentes a los estudiantes que no asistieron a la clase actual?\n\n` +
-        `📚 Clase: ${claseActual.materia}\n` +
-        `👨‍🏫 Profesor: ${claseActual.profesor}\n` +
-        `🕒 Horario: ${claseActual.horario}`
+        `Clase: ${claseActual.materia}\n` +
+        `Profesor: ${claseActual.profesor}\n` +
+        `Horario: ${claseActual.horario}`
     );
     
     if (confirmacion) {

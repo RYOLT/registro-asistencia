@@ -43,11 +43,7 @@ const horariosClases = {
     "14:10-16:40": "M3S2",
     "17:10-18:50": "Reacciones Quimicas",
     "18:50-20:30": "Ingles",
-  },
-  "Sábado": {
-    "09:20-02:00": "Pruebas"
   }
-
 };
 
 // Generar ID único del dispositivo
