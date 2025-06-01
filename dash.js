@@ -639,13 +639,6 @@ window.addEventListener("beforeunload", () => {
 //   }
 // });
 
-//Coordenadas de la escuela
-//const COORDENADAS_ESCUELA = {
-//  latitud: 20.134443, //20.119646,  // Coordenadas del salon
-//  longitud:  -98.766191,// -98.779359,
-//  radio: 100 // Radio en metros permitido
-//};
-
 const COORDENADAS_ESCUELA = {
   latitud: 20.119646,  // Coordenadas del salon
   longitud: -98.779359,
