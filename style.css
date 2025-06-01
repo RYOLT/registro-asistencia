@@ -159,6 +159,8 @@ body {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
     z-index: 1000;
+    min-width: 120px;
+    text-align: center;
 }
 
 #logoutBtn:hover {
@@ -299,7 +301,7 @@ body {
     
     #logoutBtn {
         position: static;
-        margin: 0 auto 20px;
+        margin: 0px auto 50px;
         display: block;
         width: fit-content;
     }
@@ -343,6 +345,59 @@ body {
     
     #qrcode {
         padding: 15px;
+    }
+
+    #logoutBtn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        top: auto;
+        border-radius: 50px;
+        width: 60px;
+        height: 60px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        min-width: auto;
+    }
+    
+    #logoutBtn::before {
+        content: "✕";
+        font-size: 20px;
+        font-weight: bold;
+    }
+    
+}
+
+@media (max-width: 360px) {
+    #logoutBtn {
+        position: fixed;
+        top: 8px;
+        right: 8px;
+        padding: 6px 12px;
+        font-size: 11px;
+        min-width: 70px;
+        border-radius: 5px;
+    }
+}
+
+@media (min-width: 1200px) {
+    #logoutBtn {
+        top: 30px;
+        right: 30px;
+        padding: 14px 28px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+    #logoutBtn {
+        top: 5px;
+        right: 10px;
+        padding: 6px 12px;
+        font-size: 11px;
     }
 }
 
