@@ -13,6 +13,7 @@
             <h1> Panel de Control - Profesores</h1>
             <p id="profesorNombre">Cargando...</p>
             <button id="logoutBtn"> Cerrar Sesión</button>
+            <button id="refresh" onclick="location.reload()">Recargar Página</button>
         </div>
 
         <!-- Información de clase actual -->
@@ -130,10 +131,6 @@
             </div>
         </div>
 
-        <h2>Lista de Asistencias Registradas</h2>
-    <ul id="listasProfesor" style="list-style-type:none; padding:0; max-height:300px; overflow-y:auto; border:1px solid #ccc; border-radius:5px;">
-        <!-- Las asistencias se irán agregando aquí dinámicamente -->
-    </ul>
 
         <!-- Pestaña de Horarios -->
         <div id="horarios" class="tab-content">
@@ -153,6 +150,7 @@
                         </tr>
                     </thead>
                     <tbody id="bodyHorarios">
+                        
                     </tbody>
                 </table>
             </div>

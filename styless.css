@@ -34,6 +34,19 @@
             margin-bottom: 10px;
         }
 
+        #refresh {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
         #logoutBtn {
             position: absolute;
             top: 20px;

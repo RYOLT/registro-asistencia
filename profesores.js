@@ -1,6 +1,6 @@
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-auth.js";
-import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js";
+import { deleteDoc, doc ,getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js";
 
 
 // Variables globales
@@ -8,6 +8,12 @@ let asistenciasData = [];
 let alumnosData = [];
 let currentUser = null;
 let timerInterval = null;
+
+
+let refresh = document.getElementById('refresh');
+refresh.addEventListener('click', _ => {
+    location.reload();
+})
 
 // Horarios de clases
 const horariosClases = {
@@ -38,8 +44,8 @@ const horariosClases = {
         "17:10-18:50": { materia: "Reacciones Quimicas", profesor: "Profa. Estela" },
         "18:50-20:30": { materia: "Ingles 4 ", profesor: "Prof. Juan" },
     },
-    "Sábado": {
-        "09:20-19:00": { materia: "Pruebas", profesor: "Profa. Yo" }
+    "Sábado,Domingo": {
+        "09:20-02:00": { materia: "Pruebas", profesor: "Profa. Yo" }
     }
 };
 
@@ -79,7 +85,7 @@ function elementExists(id) {
 function getElementSafely(id) {
     const element = document.getElementById(id);
     if (!element) {
-        console.warn(`Elemento con ID '${id}' no encontrado`);
+        //console.warn(`Elemento con ID '${id}' no encontrado`);
     }
     return element;
 }
@@ -91,6 +97,7 @@ window.addEventListener('load', function() {
     cargarHorarios();
     actualizarClaseActual();
     iniciarTimer();
+    cargarAlumnosDesdeFirebase();
     
     // Establecer fecha actual en filtros - con verificación
     const fechaHoy = new Date().toISOString().split('T')[0];
@@ -183,35 +190,9 @@ function generarDatosEjemplo() {
     const fechaHoy = new Date().toISOString().split('T')[0];
     const claseActual = obtenerClaseActual();
     
-    asistenciasData = [
-        // {
-        //     id: Date.now() + 1,
-        //     alumno: "Juan Pérez González",
-        //     fecha: fechaHoy,
-        //     clase: claseActual.materia !== "Sin clases" ? claseActual.materia : "M3S3",
-        //     estado: "presente",
-        //     hora: "14:25",
-        //     observaciones: ""
-        // },
-        // {
-        //     id: Date.now() + 2,
-        //     alumno: "María García López",
-        //     fecha: fechaHoy,
-        //     clase: claseActual.materia !== "Sin clases" ? claseActual.materia : "M3S3",
-        //     estado: "presente",
-        //     hora: "14:22",
-        //     observaciones: ""
-        // },
-        // {
-        //     id: Date.now() + 3,
-        //     alumno: "Carlos Rodríguez Martín",
-        //     fecha: fechaHoy,
-        //     clase: claseActual.materia !== "Sin clases" ? claseActual.materia : "M3S3",
-        //     estado: "tarde",
-        //     hora: "14:35",
-        //     observaciones: "Llegó 15 minutos tarde"
-        // }
-    ];
+    //asistenciasData = [
+ 
+    //];
     
     actualizarTablaAsistencias();
 }
@@ -395,105 +376,6 @@ function iniciarTimer() {
     }, 1000);
 }
 
-
-function crearFilaAsistencia(asistencia, tieneRegistro) {
-    const row = document.createElement('tr');
-    row.className = tieneRegistro ? '' : 'sin-asistencia';
-    
-    const estadoClass = {
-        'presente': 'badge-success',
-        'tarde': 'badge-warning',
-        'ausente': 'badge-danger'
-    };
-    
-    const estadoIcon = {
-        'presente': '✅',
-        'tarde': '⚠️',
-        'ausente': '❌'
-    };
-    
-    row.innerHTML = `
-        <td>${asistencia.alumno}</td>
-        <td>${asistencia.fecha}</td>
-        <td>${asistencia.clase}</td>
-        <td>
-            <span class="badge ${estadoClass[asistencia.estado]}">
-                ${estadoIcon[asistencia.estado]} ${asistencia.estado.charAt(0).toUpperCase() + asistencia.estado.slice(1)}
-            </span>
-        </td>
-        <td>${asistencia.hora}</td>
-        <td>${asistencia.observaciones}</td>
-        <td class="acciones">
-            ${tieneRegistro ? `
-                <button onclick="editarAsistencia(${asistencia.id})" class="btn-action btn-edit" title="Editar">
-                    ✏️
-                </button>
-                <button onclick="eliminarAsistencia(${asistencia.id})" class="btn-action btn-delete" title="Eliminar">
-                    🗑️
-                </button>
-            ` : `
-                <button onclick="agregarAsistenciaAlumno('${asistencia.alumno}', '${asistencia.fecha}', '${asistencia.clase}')" class="btn-action btn-add" title="Agregar asistencia">
-                    ➕
-                </button>
-            `}
-        </td>
-    `;
-    
-    return row;
-}
-
-
-function filtrarAsistencias() {
-    actualizarTablaAsistencias();
-}
-
-
-
-// Funciones del modal
-function abrirModal(titulo, datos = null) {
-    const modalTitulo = getElementSafely('modalTitulo');
-    const modal = getElementSafely('modalAsistencia');
-    
-    if (modalTitulo) modalTitulo.textContent = titulo;
-    if (modal) modal.style.display = 'flex';
-    
-    if (datos) {
-        const modalAlumno = getElementSafely('modalAlumno');
-        const modalFecha = getElementSafely('modalFecha');
-        const modalClase = getElementSafely('modalClase');
-        const modalEstado = getElementSafely('modalEstado');
-        const modalHora = getElementSafely('modalHora');
-        const modalObservaciones = getElementSafely('modalObservaciones');
-        const guardarBtn = getElementSafely('guardarAsistencia');
-        
-        if (modalAlumno) modalAlumno.value = datos.alumno;
-        if (modalFecha) modalFecha.value = datos.fecha;
-        if (modalClase) modalClase.value = datos.clase;
-        if (modalEstado) modalEstado.value = datos.estado;
-        if (modalHora) modalHora.value = datos.hora || '';
-        if (modalObservaciones) modalObservaciones.value = datos.observaciones || '';
-        if (guardarBtn) guardarBtn.dataset.id = datos.id;
-    } else {
-        // Limpiar formulario
-        const inputs = ['modalAlumno', 'modalFecha', 'modalClase', 'modalEstado', 'modalHora', 'modalObservaciones'];
-        inputs.forEach(inputId => {
-            const input = getElementSafely(inputId);
-            if (input) input.value = '';
-        });
-        
-        const guardarBtn = getElementSafely('guardarAsistencia');
-        if (guardarBtn && guardarBtn.dataset.id) {
-            delete guardarBtn.dataset.id;
-        }
-    }
-}
-
-function cerrarModal() {
-    const modal = getElementSafely('modalAsistencia');
-    if (modal) modal.style.display = 'none';
-}
-
-
 function agregarAsistencia() {
     // Abrir el modal para agregar asistencia
     abrirModal("Agregar Asistencia");
@@ -513,85 +395,6 @@ function agregarAsistencia() {
     if (modalHora) modalHora.value = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     if (modalObservaciones) modalObservaciones.value = '';
 }
-
-
-async function guardarAsistencia() {
-    const modalAlumno = getElementSafely('modalAlumno');
-    const modalFecha = getElementSafely('modalFecha');
-    const modalClase = getElementSafely('modalClase');
-    //const modalEstado = getElementSafely('modalEstado');
-    const modalHora = getElementSafely('modalHora');
-    const modalObservaciones = getElementSafely('modalObservaciones');
-    const guardarBtn = getElementSafely('guardarAsistencia');
-
-    // Validar que los campos necesarios estén presentes
-    if (!modalAlumno || !modalFecha || !modalClase) {
-        alert('Error: No se pudieron encontrar todos los campos del formulario');
-        return;
-    }
-
-    const alumno = modalAlumno.value;
-    const fecha = modalFecha.value;
-    const clase = modalClase.value;
-    const estado = modalEstado ? modalEstado.value : 'presente';
-    const hora = modalHora ? modalHora.value : new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-    const observaciones = modalObservaciones ? modalObservaciones.value : '';
-
-    // Validar que los campos obligatorios estén completos
-    if (!alumno || !fecha || !clase) {
-        alert('Por favor completa todos los campos obligatorios');
-        return;
-    }
-
-    const id = guardarBtn ? guardarBtn.dataset.id : null;
-
-    try {
-        if (id) {
-            // Editar asistencia existente
-            const index = asistenciasData.findIndex(a => a.id == id);
-            if (index !== -1) {
-                // Actualizar el objeto en el array
-                asistenciasData[index] = {
-                    id: parseInt(id),
-                    alumno,
-                    fecha,
-                    clase,
-                    estado,
-                    hora,
-                    observaciones
-                };
-                // Actualizar en Firestore
-                await updateDoc(doc(db, "asistencias", id), asistenciasData[index]);
-                mostrarNotificacion('Asistencia actualizada correctamente', 'success');
-            }
-        } else {
-            // Agregar nueva asistencia
-            const nuevaAsistencia = {
-                alumno,
-                fecha,
-                clase,
-                estado,
-                hora,
-                observaciones,
-                createdAt: new Date() // Agregar la fecha de creación
-            };
-            // Guardar en Firestore
-            const docRef = await addDoc(collection(db, "asistencias"), nuevaAsistencia);
-            nuevaAsistencia.id = docRef.id; // Agregar el ID del documento a la asistencia
-            asistenciasData.push(nuevaAsistencia); // Agregar a la lista de asistencias
-            mostrarNotificacion('Asistencia agregada correctamente', 'success');
-        }
-
-        cerrarModal();
-        actualizarTablaAsistencias(); // Actualizar la tabla de asistencias
-    } catch (error) {
-        console.error('Error guardando la asistencia:', error);
-        mostrarNotificacion('Fallo al registrar asistencia: ' + error.message, 'error');
-    }
-}
-
-
-
 
 // Función para cargar horarios
 function cargarHorarios() {
@@ -712,63 +515,6 @@ window.addEventListener('beforeunload', function() {
     }
 });
 
-window.mostrarTab = mostrarTab;
-window.agregarAsistencia = agregarAsistencia;
-window.agregarAsistenciaAlumno = agregarAsistenciaAlumno;
-window.editarAsistencia = editarAsistencia;
-window.eliminarAsistencia = eliminarAsistencia;
-
-//function actualizarTablaAsistencias() {
-//   const tbody = getElementSafely('tablaAsistencias');
-//  if (!tbody) return;
-// 
-//    tbody.innerHTML = '';
-// 
-//    // Aplicar filtros
-//    const asistenciasFiltradas = filtrarAsistenciasData();
-// 
-//    // Crear mapa de alumnos con asistencia registrada
-//    const alumnosConAsistencia = asistenciasFiltradas.map(a => a.alumno);
-// 
-//    // Mostrar alumnos con asistencia
-//    asistenciasFiltradas.forEach(asistencia => {
-//        const row = crearFilaAsistencia(asistencia, true);
-//        tbody.appendChild(row);
-//    });
-// 
-//    // Mostrar alumnos sin asistencia (solo si no hay filtros específicos)
-//    const filtroFecha = getElementSafely('filtroFecha');
-//    const filtroClase = getElementSafely('filtroClase');
-//    const filtroEstado = getElementSafely('filtroEstado');
-// 
-//    const fechaValue = filtroFecha ? filtroFecha.value : '';
-//    const claseValue = filtroClase ? filtroClase.value : '';
-//    const estadoValue = filtroEstado ? filtroEstado.value : '';
-//
-//    if (fechaValue && !estadoValue) {
-//        const claseParaFiltro = claseValue || obtenerClaseActual().materia;
-//     
-//        alumnosEjemplo.forEach(alumno => {
-//            if (!alumnosConAsistencia.includes(alumno.nombre) && claseParaFiltro !== "Sin clases") {
-//                const asistenciaVacia = {
-//                    id: null,
-//                    alumno: alumno.nombre,
-//                    fecha: fechaValue,
-//                    clase: claseParaFiltro,
-//                    estado: "ausente",
-//                    hora: "N/A",
-//                    observaciones: "Sin registro"
-//                };
-//                const row = crearFilaAsistencia(asistenciaVacia, false);
-//                tbody.appendChild(row);
-//            }
-//       });
-//    }
-// 
-//   // Actualizar estadísticas
-//    actualizarEstadisticas(asistenciasFiltradas);
-//}
-
 async function cargarAsistencias() {
     try {
         const querySnapshot = await getDocs(collection(db, "asistencias"));
@@ -790,55 +536,21 @@ async function cargarAsistencias() {
 function filtrarAsistenciasData() {
     const filtroFecha = getElementSafely('filtroFecha');
     const filtroClase = getElementSafely('filtroClase');
-    const filtroEstado = getElementSafely('filtroEstado') 
+    const filtroEstado = getElementSafely('filtroEstado');
+    
     const fechaValue = filtroFecha ? filtroFecha.value : '';
     const claseValue = filtroClase ? filtroClase.value : '';
     const estadoValue = filtroEstado ? filtroEstado.value : '';
 
     return asistenciasData.filter(asistencia => {
-
         const coincideFecha = !fechaValue || asistencia.fecha === fechaValue;
         const coincideClase = !claseValue || asistencia.clase === claseValue;
-        const coincideEstado = !estadoValue || asistencia.estado === estadoValue    
+        const coincideEstado = !estadoValue || asistencia.estado === estadoValue;
 
         return coincideFecha && coincideClase && coincideEstado;
     });
 }
 
-
- function actualizarTablaAsistencias() {
-     const tbody = getElementSafely('bodyAsistencias');
-     if (!tbody) return;
-
-     tbody.innerHTML = '';
-
-     // Aplicar filtros
-     const asistenciasFiltradas = filtrarAsistenciasData();
-
-     // Contadores para estadísticas
-     let total = asistenciasFiltradas.length;
-     let presentes = 0;
-     let ausentes = 0;
-     let tardes = 0;
-
-     // Mostrar alumnos con asistencia
-     asistenciasFiltradas.forEach(asistencia => {
-         const row = crearFilaAsistencia(asistencia, true);
-         tbody.appendChild(row);
-
-         // Contar presentes, ausentes y tardes
-         if (asistencia.estado === 'presente') {
-             presentes++;
-         } else if (asistencia.estado === 'ausente') {
-             ausentes++;
-         } else if (asistencia.estado === 'tarde') {
-             tardes++;
-         }
-     });
-
-     // Actualizar estadísticas
-     actualizarEstadisticas(total, presentes, ausentes, tardes);
- }
 
 function actualizarEstadisticas(total, presentes, ausentes, tardes) {
     const totalAlumnos = getElementSafely('totalAlumnos');
@@ -857,7 +569,291 @@ function actualizarEstadisticas(total, presentes, ausentes, tardes) {
     if (porcentajeAsistencia) porcentajeAsistencia.textContent = `${porcentaje}%`;
 }
 
+window.addEventListener('load', function() {
+    inicializarPanel();
+    cargarAlumnos();
+    cargarClases();
+});
 
-//    window.onload = () => {
-//      actualizarTablaAsistenciasProfesor();
-//    };
+// Función para actualizar la tabla de asistencias
+function actualizarTablaAsistencias(datosParaMostrar = asistenciasData) {
+    const tbody = document.getElementById('bodyAsistencias');
+    if (!tbody) return;
+
+    tbody.innerHTML = ''; // Limpiar la tabla
+    const asistenciasFiltradas = filtrarAsistenciasData();
+
+
+
+    asistenciasData.forEach(asistencia => {
+        const row = document.createElement('tr');
+        const estadoClass = {
+            'presente': 'badge-success',
+            'tarde': 'badge-warning',
+            'ausente': 'badge-danger'
+        };
+        
+        const estadoIcon = {
+            'presente': '✅',
+            'tarde': '⚠️',
+            'ausente': '❌'
+        };
+
+        row.innerHTML = `
+            <td>${asistencia.alumno}</td>
+            <td>${asistencia.clase}</td>
+            <td>${asistencia.fecha}</td>
+            <td>${asistencia.hora}</td>
+            <td>
+                <span class="badge ${estadoClass[asistencia.estado]}">
+                    ${estadoIcon[asistencia.estado]} ${asistencia.estado.charAt(0).toUpperCase() + asistencia.estado.slice(1)}
+                </span>
+            </td>
+            <td>
+                <button onclick="editarAsistencia('${asistencia.id}')" class="btn-action btn-edit" title="Editar">
+                    ✏️
+                </button>
+                <button onclick="eliminarAsistencia('${asistencia.id}')" class="btn-action btn-delete" title="Eliminar">
+                    🗑️
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+// Exportar función al scope global
+window.actualizarTablaAsistencias = actualizarTablaAsistencias;
+
+async function cargarAlumnosDesdeFirebase() {
+    try {
+        const querySnapshot = await getDocs(collection(db, "alumnos"));
+        alumnosData = []; // Limpiar array
+        querySnapshot.forEach((doc) => {
+            alumnosData.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        console.log('Alumnos cargados desde Firebase:', alumnosData);
+    } catch (error) {
+        console.error('Error cargando alumnos:', error);
+    }
+}
+
+
+function cargarAlumnos() {
+    console.log('alumnosData:', alumnosData); // ← Ver qué contiene
+    console.log('alumnosData.length:', alumnosData.length); // ← Ver el tamaño
+    
+    const select = document.getElementById('modalAlumno');
+    if (select) {
+        select.innerHTML = '<option value="">Seleccionar alumno...</option>';
+        const datosAUsar = alumnosData.length > 0 ? alumnosData : alumnosEjemplo;
+        console.log('Usando datos:', datosAUsar); // ← Ver qué datos usa
+        datosAUsar.forEach(alumno => {
+            select.innerHTML += `<option value="${alumno.nombre}">${alumno.nombre}</option>`;
+        });
+    }
+}
+
+// Función para cargar clases en el modal
+function cargarClases() {
+    const select = document.getElementById('modalClase');
+    if (select) {
+        select.innerHTML = '<option value="">Seleccionar clase...</option>';
+        Object.values(horariosClases).forEach(dia => {
+            Object.values(dia).forEach(clase => {
+                select.innerHTML += `<option value="${clase.materia}">${clase.materia}</option>`;
+            });
+        });
+    }
+}
+
+// Función para editar asistencia (función que faltaba)
+function editarAsistencia(id) {
+    cargarAlumnos();
+    const asistencia = asistenciasData.find(a => a.id === id);
+    if (!asistencia) {
+        alert('Asistencia no encontrada');
+        return;
+    }
+
+    // Llenar el modal con los datos de la asistencia
+    document.getElementById('modalAlumno').value = asistencia.alumno;
+    document.getElementById('modalClase').value = asistencia.clase;
+    document.getElementById('modalFecha').value = asistencia.fecha;
+    document.getElementById('modalHora').value = asistencia.hora;
+    
+    // Cambiar el título del modal
+    document.getElementById('tituloModal').textContent = 'Editar Asistencia';
+    
+    // Abrir el modal
+    abrirModal();
+}
+
+// Exportar función al scope global
+window.editarAsistencia = editarAsistencia;
+
+// Función para abrir el modal
+function abrirModal() {
+    const modal = document.getElementById('modalAsistencia');
+    if (modal) modal.style.display = 'flex';
+}
+
+// Exportar función al scope global
+window.abrirModal = abrirModal;
+
+// Función para cerrar el modal
+function cerrarModal() {
+    const modal = document.getElementById('modalAsistencia');
+    if (modal) modal.style.display = 'none';
+    
+    // Limpiar el formulario
+    document.getElementById('modalAlumno').value = '';
+    document.getElementById('modalClase').value = '';
+    document.getElementById('modalFecha').value = '';
+    document.getElementById('modalHora').value = '';
+    document.getElementById('tituloModal').textContent = 'Agregar Asistencia Manual';
+}
+
+// Exportar función al scope global
+window.cerrarModal = cerrarModal;
+
+// Función para guardar asistencia
+async function guardarAsistencia() {
+    const modalAlumno = document.getElementById('modalAlumno');
+    const modalFecha = document.getElementById('modalFecha');
+    const modalClase = document.getElementById('modalClase');
+    const modalHora = document.getElementById('modalHora');
+
+    // Validar que los campos necesarios estén presentes
+    if (!modalAlumno || !modalFecha || !modalClase || !modalHora) {
+        alert('Error: Por favor completa todos los campos del formulario');
+        return;
+    }
+
+    const alumno = modalAlumno.value;
+    const fecha = modalFecha.value;
+    const clase = modalClase.value;
+    const hora = modalHora.value;
+
+    // Validar que los campos tengan valores
+    if (!alumno || !fecha || !clase || !hora) {
+        alert('Por favor completa todos los campos');
+        return;
+    }
+
+    // Crear un objeto de asistencia
+    const nuevaAsistencia = {
+        alumno,
+        fecha,
+        clase,
+        hora,
+        estado: 'presente', // Estado por defecto
+        createdAt: new Date() // Agregar la fecha de creación
+    };
+
+    try {
+        // Guardar en Firestore
+        const docRef = await addDoc(collection(db, "asistencias"), nuevaAsistencia);
+        nuevaAsistencia.id = docRef.id; // Agregar el ID del documento a la asistencia
+        asistenciasData.push(nuevaAsistencia); // Agregar a la lista de asistencias
+
+        // Actualizar la tabla de asistencias
+        actualizarTablaAsistencias();
+
+        alert('Asistencia agregada correctamente');
+        cerrarModal();
+    } catch (error) {
+        console.error('Error guardando la asistencia:', error);
+        alert('Fallo al registrar asistencia: ' + error.message);
+    }
+}
+
+// Exportar función al scope global
+window.guardarAsistencia = guardarAsistencia;
+
+// Función para eliminar asistencia
+async function eliminarAsistencia(id) {
+    const confirmacion = confirm("¿Estás seguro de que deseas eliminar esta asistencia?");
+    if (!confirmacion) return;
+    
+    try {
+        // Eliminar de Firestore
+        await deleteDoc(doc(db, "asistencias", id));
+        // Eliminar de la lista local
+        asistenciasData = asistenciasData.filter(a => a.id !== id);
+        // Actualizar la tabla de asistencias
+        actualizarTablaAsistencias();
+        alert('Asistencia eliminada correctamente');
+    } catch (error) {
+        console.error('Error eliminando la asistencia:', error);
+        alert('Fallo al eliminar la asistencia: ' + error.message);
+    }
+}
+
+// Exportar función al scope global
+window.eliminarAsistencia = eliminarAsistencia;
+
+
+// Exportar función al scope global
+window.inicializarPanel = inicializarPanel;
+
+
+// Exportar función al scope global
+window.mostrarTab = mostrarTab;
+
+function filtrarAsistencias() {
+    const filtroFecha = document.getElementById('filtroFecha');
+    const filtroClase = document.getElementById('filtroClase');
+    const filtroEstado = document.getElementById('filtroEstado');
+    
+    // Obtener valores de los filtros
+    const fechaFiltro = filtroFecha ? filtroFecha.value : '';
+    const claseFiltro = filtroClase ? filtroClase.value : '';
+    const estadoFiltro = filtroEstado ? filtroEstado.value : '';
+    
+    // Filtrar los datos
+    let asistenciasFiltradas = asistenciasData.filter(asistencia => {
+        let cumpleFiltros = true;
+        
+        // Filtro por fecha
+        if (fechaFiltro && asistencia.fecha !== fechaFiltro) {
+            cumpleFiltros = false;
+        }
+        
+        // Filtro por clase
+        if (claseFiltro && asistencia.clase !== claseFiltro) {
+            cumpleFiltros = false;
+        }
+        
+        // Filtro por estado
+        if (estadoFiltro && asistencia.estado !== estadoFiltro) {
+            cumpleFiltros = false;
+        }
+        
+        return cumpleFiltros;
+    });
+    
+    // Actualizar la tabla con los datos filtrados
+    actualizarTablaAsistencias(asistenciasFiltradas);
+    
+    // Actualizar resumen con datos filtrados
+    actualizarResumen(asistenciasFiltradas);
+}
+
+function actualizarResumen(datos = asistenciasData) {
+    const presentes = datos.filter(a => a.estado === 'presente').length;
+    const ausentes = datos.filter(a => a.estado === 'ausente').length;
+    const tardes = datos.filter(a => a.estado === 'tarde').length;
+    const total = datos.length;
+    const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0;
+    
+    document.getElementById('totalPresentes').textContent = presentes;
+    document.getElementById('totalAusentes').textContent = ausentes;
+    document.getElementById('totalTardes').textContent = tardes;
+    document.getElementById('totalAlumnos').textContent = total;
+    document.getElementById('porcentajeAsistencia').textContent = porcentaje + '%';
+}
