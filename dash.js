@@ -1,6 +1,6 @@
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-auth.js";
-import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js";
+import { onSnapshot, doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js";
 
 const infoAlumno = document.getElementById("infoAlumno");
 const contenidoAlumno = document.getElementById("contenidoAlumno");
@@ -13,13 +13,9 @@ const listasProfesor = document.getElementById("listasProfesor");
 let usuarioActual = null;
 let qrActual = null;
 let dispositivoId = null;
+let unsubscribeAsistencias = null;
 
-// Coordenadas de la escuela
-// const COORDENADAS_ESCUELA = {
-//   latitud: 20.134443, //20.119646,  // Coordenadas del salon
-//   longitud:  -98.766191,// -98.779359,
-//   radio: 100 // Radio en metros permitido
-// };
+
 
 // Horarios de clases por día
 const horariosClases = {
@@ -143,77 +139,6 @@ function obtenerClaseActual() {
   return { dia: diaActual, clase: "Fuera de horario", horario: "N/A" };
 }
 
-// Calcular distancia entre dos coordenadas
-// function calcularDistancia(lat1, lon1, lat2, lon2) {
-//   const R = 6371000; // Radio de la Tierra en metros
-//   const dLat = (lat2 - lat1) * Math.PI / 180;
-//   const dLon = (lon2 - lon1) * Math.PI / 180;
-//   const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-//             Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-//             Math.sin(dLon/2) * Math.sin(dLon/2);
-//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-//   return R * c;
-// }
-
-// Verificar ubicación
-// function verificarUbicacion() {
-//   return new Promise((resolve, reject) => {
-//     if (!navigator.geolocation) {
-//       reject(new Error("La geolocalización no está soportada por este navegador"));
-//       return;
-//     }
-
-//     navigator.geolocation.getCurrentPosition(
-//       (position) => {
-//         const { latitude, longitude } = position.coords;
-//         const distancia = calcularDistancia(
-//           latitude, longitude,
-//           COORDENADAS_ESCUELA.latitud, COORDENADAS_ESCUELA.longitud
-//         );
-        
-//         console.log(`Distancia a la escuela: ${distancia.toFixed(2)} metros`);
-        
-//         if (distancia <= COORDENADAS_ESCUELA.radio) {
-//           resolve({ 
-//             valida: true, 
-//             distancia: distancia.toFixed(2),
-//             coordenadas: { latitude, longitude }
-//           });
-//         } else {
-//           resolve({ 
-//             valida: false, 
-//             distancia: distancia.toFixed(2),
-//             coordenadas: { latitude, longitude }
-//           });
-//         }
-//       },
-//       (error) => {
-//         let mensaje = "";
-//         switch(error.code) {
-//           case error.PERMISSION_DENIED:
-//             mensaje = "Permiso de ubicación denegado";
-//             break;
-//           case error.POSITION_UNAVAILABLE:
-//             mensaje = "Ubicación no disponible";
-//             break;
-//           case error.TIMEOUT:
-//             mensaje = "Tiempo agotado obteniendo ubicación";
-//             break;
-//           default:
-//             mensaje = "Error desconocido obteniendo ubicación";
-//             break;
-//         }
-//         reject(new Error(mensaje));
-//       },
-//       {
-//         enableHighAccuracy: true,
-//         timeout: 10000,
-//         maximumAge: 60000
-//       }
-//     );
-//   });
-// }
-
 // Cargar QRCode desde CDN
 function cargarQRCode() {
   return new Promise((resolve, reject) => {
@@ -295,30 +220,141 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-
 async function cargarAsistenciasAlumno(nombreCompleto) {
   try {
-    const q = query(collection(db, "asistencias"), where("nombreCompleto", "==", nombreCompleto));
-    const querySnapshot = await getDocs(q);
-
-    listaAsistencias.innerHTML = "";
-    
-    if (querySnapshot.empty) {
-      const li = document.createElement("li");
-      li.textContent = "No hay asistencias registradas";
-      listaAsistencias.appendChild(li);
-    } else {
-      querySnapshot.forEach((doc) => {
-        const asistencia = doc.data();
-        const li = document.createElement("li");
-        li.textContent = `${asistencia.fecha} - ${asistencia.clase} - ${asistencia.hora}`;
-        listaAsistencias.appendChild(li);
-      });
+    // Si ya hay un listener activo, lo desuscribimos primero
+    if (unsubscribeAsistencias) {
+      unsubscribeAsistencias();
     }
+
+    const q = query(collection(db, "asistencias"), where("nombreCompleto", "==", nombreCompleto));
+    
+    // Usar onSnapshot en lugar de getDocs para escuchar cambios en tiempo real
+    unsubscribeAsistencias = onSnapshot(q, (querySnapshot) => {
+      listaAsistencias.innerHTML = "";
+      
+      if (querySnapshot.empty) {
+        const li = document.createElement("li");
+        li.textContent = "No hay asistencias registradas";
+        listaAsistencias.appendChild(li);
+      } else {
+        // Convertir a array y ordenar por fecha (más reciente primero)
+        const asistencias = [];
+        querySnapshot.forEach((doc) => {
+          asistencias.push(doc.data());
+        });
+        
+        // Ordenar por fecha descendente (opcional)
+        asistencias.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        
+        asistencias.forEach((asistencia) => {
+          const li = document.createElement("li");
+          li.className = "asistencia-registrada";
+          li.innerHTML = `
+            <span class="fecha">${asistencia.fecha}</span> - 
+            <span class="clase">${asistencia.clase}</span> - 
+            <span class="hora">${asistencia.hora}</span>
+            <span class="estado">✓ Registrada</span>
+          `;
+          listaAsistencias.appendChild(li);
+        });
+      }
+    }, (error) => {
+      console.error("Error escuchando asistencias:", error);
+      listaAsistencias.innerHTML = "<li>Error cargando asistencias</li>";
+    });
+    
   } catch (error) {
-    console.error("Error cargando asistencias:", error);
+    console.error("Error configurando listener de asistencias:", error);
   }
 }
+
+// Función para limpiar el listener cuando sea necesario
+function limpiarListenerAsistencias() {
+  if (unsubscribeAsistencias) {
+    unsubscribeAsistencias();
+    unsubscribeAsistencias = null;
+  }
+}
+
+async function verificarAsistenciaExistente(nombreCompleto, clase, fecha) {
+  try {
+    const q = query(
+      collection(db, "asistencias"), 
+      where("nombreCompleto", "==", nombreCompleto),
+      where("clase", "==", clase),
+      where("fecha", "==", fecha)
+    );
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+  } catch (error) {
+    console.error("Error verificando asistencia existente:", error);
+    return false;
+  }
+}
+
+// Función para mostrar el estado de registro para la clase actual
+async function mostrarEstadoClaseActual(nombreCompleto, claseActual, fechaActual) {
+  const yaRegistrado = await verificarAsistenciaExistente(nombreCompleto, claseActual, fechaActual);
+  
+  const estadoDiv = document.getElementById('estado-clase-actual') || createEstadoDiv();
+  
+  if (yaRegistrado) {
+    estadoDiv.innerHTML = `
+      <div class="alerta-ya-registrado">
+        <span class="icono">⚠️</span>
+        <span class="mensaje">Ya tienes registrada tu asistencia para la clase: <strong>${claseActual}</strong></span>
+      </div>
+    `;
+    estadoDiv.className = 'estado-ya-registrado';
+  } else {
+    estadoDiv.innerHTML = `
+      <div class="alerta-pendiente">
+        <span class="icono">📋</span>
+        <span class="mensaje">Escanea el código QR para registrar tu asistencia en: <strong>${claseActual}</strong></span>
+      </div>
+    `;
+    estadoDiv.className = 'estado-pendiente';
+  }
+  
+  return yaRegistrado;
+}
+
+function createEstadoDiv() {
+  const estadoDiv = document.createElement('div');
+  estadoDiv.id = 'estado-clase-actual';
+  // Insertar antes del escáner QR o donde consideres apropiado
+  const container = document.querySelector('.scanner-container') || document.body;
+  container.insertBefore(estadoDiv, container.firstChild);
+  return estadoDiv;
+}
+
+
+
+
+//async function cargarAsistenciasAlumno(nombreCompleto) {
+//  try {
+//    const q = query(collection(db, "asistencias"), where("nombreCompleto", "==", nombreCompleto));
+//    const querySnapshot = await getDocs(q);
+//
+//    listaAsistencias.innerHTML = "";
+//    
+//    if (querySnapshot.empty) {
+//      const li = document.createElement("li");
+//      li.textContent = "No hay asistencias registradas";
+//      listaAsistencias.appendChild(li);
+//    } else {
+//      querySnapshot.forEach((doc) => {
+//        const asistencia = doc.data();
+//        const li = document.createElement("li");
+//        li.textContent = `${asistencia.fecha} - ${asistencia.clase} - ${asistencia.hora}`;
+//        listaAsistencias.appendChild(li);
+//      });
+//    }
+//  } catch (error) {
+//    console.error("Error cargando asistencias:", error);
+//  }
+//}
 
 async function cargarAsistenciasProfesor() {
   try {
@@ -573,127 +609,6 @@ function guardarQR() {
   alert("Código QR guardado exitosamente");
 }
 
-// Modificar la función leerQR para registrar asistencia
-// function leerQR() {
-//   const input = document.createElement("input");
-//   input.type = "file";
-//   input.accept = "image/*";
-  
-//   input.onchange = async (event) => {
-//     const file = event.target.files[0];
-//     if (!file) return;
-    
-//     try {
-//       // Verificar ubicación primero
-//       const ubicacion = await verificarUbicacion();
-      
-//       if (!ubicacion.valida) {
-//         alert(` No puedes registrar asistencia desde esta ubicación.\nDistancia a la escuela: ${ubicacion.distancia} metros\nMáximo permitido: ${COORDENADAS_ESCUELA.radio} metros`);
-//         return;
-//       }
-      
-//       // Aquí implementarías la lectura del QR desde la imagen
-//       const qrData = await leerQRCodeDesdeImagen(file); // Implementar esta función para leer el QR
-//       const resultado = await registrarAsistencia(qrData); // Registrar asistencia
-      
-//       if (resultado.success) {
-//         alert(resultado.message);
-//         // Actualizar la tabla de asistencias en la página de profesores
-//         actualizarTablaAsistenciasProfesor();
-//       } else {
-//         alert(resultado.message);
-//       }
-      
-//     } catch (error) {
-//       console.error("Error verificando ubicación:", error);
-//       alert(` Error de ubicación: ${error.message}\n\nDebes permitir el acceso a tu ubicación y estar en la escuela para registrar asistencia.`);
-//     }
-//   };
-  
-//   input.click();
-// }
-
-// // Función para leer el código QR desde una imagen
-// async function leerQRCodeDesdeImagen(file) {
-//   // Implementar la lógica para leer el QR desde la imagen usando una librería como jsQR
-//   // Retornar los datos del QR leídos
-// }
-
-
-// Función para registrar asistencia
-// window.registrarAsistencia = async function(qrData) {
-//   try {
-//     console.log("Registrando asistencia:", qrData);
-    
-//     // Verificar ubicación
-//     const ubicacion = await verificarUbicacion();
-//     if (!ubicacion.valida) {
-//       return { 
-//         success: false, 
-//         message: `❌ Ubicación inválida.\nDistancia: ${ubicacion.distancia}m\nMáximo: ${COORDENADAS_ESCUELA.radio}m` 
-//       };
-//     }
-    
-//     // Reconstruir ID completo si viene comprimido
-//     let qrId = qrData.i || qrData.id;
-    
-//     // Validar que sea el QR actual
-//     if (!qrActual || qrActual.id !== qrId) {
-//       return { success: false, message: "Código QR inválido o ya utilizado" };
-//     }
-    
-//     // Validar tiempo (QR válido por 10 minutos)
-//     const ahora = Date.now();
-//     const timestamp = qrData.t || qrData.timestamp;
-//     const tiempoTranscurrido = ahora - timestamp;
-//     if (tiempoTranscurrido > 600000) {
-//       return { success: false, message: "Código QR expirado" };
-//     }
-    
-//     // Verificar dispositivo (usar datos del QR actual completo)
-//     const dispositivoQR = qrData.d || qrData.dispositivoId;
-//     if (dispositivoQR && !dispositivoId.includes(dispositivoQR)) {
-//       return { success: false, message: "Dispositivo no autorizado" };
-//     }
-    
-//     // Validar padding aleatorio para evitar copias
-//     if (qrData.r && qrData.r !== qrActual.randomPadding) {
-//       return { success: false, message: "Código QR manipulado o copiado" };
-//     }
-    
-//     // Registrar en Firestore usando datos completos del qrActual
-//     await addDoc(collection(db, "asistencias"), {
-//       nombreCompleto: qrActual.nombreCompleto,
-//       uid: qrActual.uid,
-//       clase: qrActual.clase,
-//       dia: qrActual.dia,
-//       horario: qrActual.horario,
-//       fecha: qrActual.fecha,
-//       hora: qrActual.hora,
-//       timestamp: serverTimestamp(),
-//       qrId: qrActual.id,
-//       dispositivoId: qrActual.dispositivoId,
-//       ubicacion: ubicacion.coordenadas,
-//       distanciaEscuela: ubicacion.distancia,
-//       qrVersion: qrActual.version
-//     });
-    
-//     // Invalidar QR actual
-//     const datosParaRespuesta = { ...qrActual };
-//     qrActual = null;
-    
-//     console.log("Asistencia registrada exitosamente");
-    
-//     return {
-//       success: true,
-//       message: `✅ Asistencia registrada\n📅 ${datosParaRespuesta.fecha}\n⏰ ${datosParaRespuesta.hora}\n📚 ${datosParaRespuesta.clase}\n📍 Ubicación verificada (${ubicacion.distancia}m)\n🔐 QR v${datosParaRespuesta.version}`
-//     };
-    
-//   } catch (error) {
-//     console.error("Error registrando asistencia:", error);
-//     return { success: false, message: "Error registrando asistencia: " + error.message };
-//   }
-// };
 
 window.addEventListener("load", () => {
   console.log("Página cargada - QR será regenerado automáticamente");
@@ -724,37 +639,12 @@ window.addEventListener("beforeunload", () => {
 //   }
 // });
 
-
-
-// async function actualizarTablaAsistenciasProfesor() {
-//   try {
-//     const q = query(collection(db, "asistencias"));
-//     const querySnapshot = await getDocs(q);
-//     const listasProfesor = document.getElementById("listasProfesor");
-//     listasProfesor.innerHTML = ""; // Limpiar la lista antes de actualizar
-
-//     querySnapshot.forEach((doc) => {
-//       const asistencia = doc.data();
-//       const li = document.createElement("li");
-//       li.textContent = `${asistencia.nombreCompleto} - ${asistencia.fecha} - ${asistencia.clase} - ${asistencia.hora}`;
-//       listasProfesor.appendChild(li);
-//     });
-//   } catch (error) {
-//     console.error("Error cargando asistencias profesor:", error);
-//   }
-// }
-
-
-
-
-
-
-/** 
- * dash.js - Código para escanear Código QR, verificar ubicación, y registrar asistencia en Firestore
- * Requiere incluir en tu HTML:
- * - La librería jsQR: &lt;script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"&gt;&lt;/script&gt;
- * - Firebase ya inicializado con 'db' exportado como la instance de Firestore
- */
+// Coordenadas de la escuela
+// const COORDENADAS_ESCUELA = {
+//   latitud: 20.134443, //20.119646,  // Coordenadas del salon
+//   longitud:  -98.766191,// -98.779359,
+//   radio: 100 // Radio en metros permitido
+// };
 
 const COORDENADAS_ESCUELA = {
   latitud: 20.134443, //20.119646,  // Coordenadas del salon
@@ -895,27 +785,6 @@ async function leerQR() {
   };
   input.click();
 }
-
-// Función para registrar asistencia en Firestore
-// async function registrarAsistencia(qrData) {
-//   try {
-//     const nuevaAsistencia = {
-//       alumno: qrData.alumno || data.nombreCompleto || "Desconocido",
-//       clase: qrData.clase || data.clase || "Desconocida",
-//       fecha: new Date().toISOString().split("T")[0],
-//       estado: 'presente',
-//       hora: new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'}),
-//       observaciones: '',
-//       createdAt: new Date()
-//     };
-//     await addDoc(collection(db, "asistencias"), nuevaAsistencia);
-//     console.log("Asistencia registrada:", nuevaAsistencia);
-//     return { success: true, message: "Asistencia registrada correctamente." };
-//   } catch (error) {
-//     console.error('Error guardando la asistencia:', error);
-//     return { success: false, message: "Fallo al registrar asistencia: " + error.message };
-//   }
-// }
 
 async function registrarAsistencia(qrData) {
   try {

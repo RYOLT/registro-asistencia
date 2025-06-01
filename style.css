@@ -345,3 +345,60 @@ body {
         padding: 15px;
     }
 }
+
+.asistencia-registrada {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin: 5px 0;
+  background-color: #e8f5e8;
+  border-left: 4px solid #4caf50;
+  border-radius: 4px;
+}
+
+.asistencia-registrada .estado {
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.asistencia-registrada .clase {
+  font-weight: bold;
+  color: #2e7d32;
+}
+
+#estado-clase-actual {
+  margin: 20px 0;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.estado-ya-registrado {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+}
+
+.estado-pendiente {
+  background-color: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+}
+
+.alerta-ya-registrado, .alerta-pendiente {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.alerta-ya-registrado .icono, .alerta-pendiente .icono {
+  font-size: 1.2em;
+}
+
+.alerta-ya-registrado .mensaje, .alerta-pendiente .mensaje {
+  font-size: 1em;
+  font-weight: 500;
+}

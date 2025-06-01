@@ -165,7 +165,8 @@ function setupEventListeners() {
     }
 }
 
-function inicializarPanel() {
+async function inicializarPanel() {
+    try{ 
     // Simular usuario autenticado
     currentUser = {
         name: "Profesor / Coordinador",
@@ -183,6 +184,30 @@ function inicializarPanel() {
     
     // Generar datos de ejemplo
     generarDatosEjemplo();
+
+     // 1. Cargar datos desde Firebase
+        await cargarAsistenciasDesdeFirebase();
+        await cargarAlumnosDesdeFirebase();
+        
+        // 2. Inicializar filtros y sus event listeners
+        inicializarFiltros();
+        
+        // 3. Llenar las opciones de filtros
+        llenarFiltroClases();
+        cargarAlumnos(); // Para el modal
+        cargarClases(); // Para el modal
+        
+        // 4. Mostrar datos iniciales
+        actualizarTablaAsistencias();
+        actualizarResumen();
+        
+        // 5. Inicializar otras funciones
+        cargarHorarios();
+    
+    console.log("Panel inicializado correctamente");
+    } catch (error) {
+        console.error("Error inicializando el panel:", error);
+    }
 }
 
 function generarDatosEjemplo() {
@@ -581,11 +606,21 @@ function actualizarTablaAsistencias(datosParaMostrar = asistenciasData) {
     if (!tbody) return;
 
     tbody.innerHTML = ''; // Limpiar la tabla
-    const asistenciasFiltradas = filtrarAsistenciasData();
+    
+    // Si no hay datos para mostrar
+    if (datosParaMostrar.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
+                    No se encontraron asistencias con los filtros aplicados
+                </td>
+            </tr>
+        `;
+        return;
+    }
 
-
-
-    asistenciasData.forEach(asistencia => {
+    // Usar los datos que se pasan como parámetro (datos filtrados o todos)
+    datosParaMostrar.forEach(asistencia => {
         const row = document.createElement('tr');
         const estadoClass = {
             'presente': 'badge-success',
@@ -815,8 +850,10 @@ function filtrarAsistencias() {
     const claseFiltro = filtroClase ? filtroClase.value : '';
     const estadoFiltro = filtroEstado ? filtroEstado.value : '';
     
+    console.log('Filtros aplicados:', { fechaFiltro, claseFiltro, estadoFiltro });
+    
     // Filtrar los datos
-    let asistenciasFiltradas = asistenciasData.filter(asistencia => {
+    const asistenciasFiltradas = asistenciasData.filter(asistencia => {
         let cumpleFiltros = true;
         
         // Filtro por fecha
@@ -837,23 +874,502 @@ function filtrarAsistencias() {
         return cumpleFiltros;
     });
     
+    console.log('Datos filtrados:', asistenciasFiltradas);
+    
     // Actualizar la tabla con los datos filtrados
     actualizarTablaAsistencias(asistenciasFiltradas);
     
-    // Actualizar resumen con datos filtrados
+    // Actualizar estadísticas con datos filtrados
     actualizarResumen(asistenciasFiltradas);
 }
 
-function actualizarResumen(datos = asistenciasData) {
-    const presentes = datos.filter(a => a.estado === 'presente').length;
-    const ausentes = datos.filter(a => a.estado === 'ausente').length;
-    const tardes = datos.filter(a => a.estado === 'tarde').length;
-    const total = datos.length;
-    const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0;
+// function actualizarResumen(datos = asistenciasData) {
+//     const presentes = datos.filter(a => a.estado === 'presente').length;
+//     const ausentes = datos.filter(a => a.estado === 'ausente').length;
+//     const tardes = datos.filter(a => a.estado === 'tarde').length;
+//     const total = datos.length;
+//     const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0;
     
-    document.getElementById('totalPresentes').textContent = presentes;
-    document.getElementById('totalAusentes').textContent = ausentes;
-    document.getElementById('totalTardes').textContent = tardes;
-    document.getElementById('totalAlumnos').textContent = total;
-    document.getElementById('porcentajeAsistencia').textContent = porcentaje + '%';
+//     const totalAlumnos = document.getElementById('totalAlumnos');
+//     const totalPresentes = document.getElementById('totalPresentes');
+//     const totalAusentes = document.getElementById('totalAusentes');
+//     const totalTardes = document.getElementById('totalTardes');
+//     const porcentajeAsistencia = document.getElementById('porcentajeAsistencia');
+
+//     if (totalAlumnos) totalAlumnos.textContent = total;
+//     if (totalPresentes) totalPresentes.textContent = presentes;
+//     if (totalAusentes) totalAusentes.textContent = ausentes;
+//     if (totalTardes) totalTardes.textContent = tardes;
+//     if (porcentajeAsistencia) porcentajeAsistencia.textContent = porcentaje + '%';
+// }
+
+// Función para inicializar los event listeners de los filtros
+function inicializarFiltros() {
+    const filtroFecha = document.getElementById('filtroFecha');
+    const filtroClase = document.getElementById('filtroClase');
+    const filtroEstado = document.getElementById('filtroEstado');
+
+    // Agregar event listeners para filtrar automáticamente
+    if (filtroFecha) {
+        filtroFecha.addEventListener('change', filtrarAsistencias);
+    }
+    if (filtroClase) {
+        filtroClase.addEventListener('change', filtrarAsistencias);
+    }
+    if (filtroEstado) {
+        filtroEstado.addEventListener('change', filtrarAsistencias);
+    }
 }
+
+// Función para llenar el filtro de clases
+function llenarFiltroClases() {
+    const filtroClase = document.getElementById('filtroClase');
+    if (!filtroClase) return;
+    
+    filtroClase.innerHTML = '<option value="">Todas las clases</option>';
+    
+    // Obtener clases únicas de los datos de asistencias
+    const clasesUnicas = [...new Set(asistenciasData.map(a => a.clase))];
+    
+    clasesUnicas.forEach(clase => {
+        if (clase) { // Solo agregar si la clase no es vacía
+            filtroClase.innerHTML += `<option value="${clase}">${clase}</option>`;
+        }
+    });
+}
+
+// Función para limpiar filtros
+function limpiarFiltros() {
+    const filtroFecha = document.getElementById('filtroFecha');
+    const filtroClase = document.getElementById('filtroClase');
+    const filtroEstado = document.getElementById('filtroEstado');
+
+    if (filtroFecha) filtroFecha.value = '';
+    if (filtroClase) filtroClase.value = '';
+    if (filtroEstado) filtroEstado.value = '';
+    
+    // Mostrar todos los datos
+    actualizarTablaAsistencias(asistenciasData);
+    actualizarResumen(asistenciasData);
+}
+
+// Exportar funciones al scope global
+window.filtrarAsistencias = filtrarAsistencias;
+window.actualizarTablaAsistencias = actualizarTablaAsistencias;
+window.actualizarResumen = actualizarResumen;
+window.inicializarFiltros = inicializarFiltros;
+window.llenarFiltroClases = llenarFiltroClases;
+window.limpiarFiltros = limpiarFiltros;
+
+// Llamar inicializarFiltros cuando se cargue la página
+document.addEventListener('DOMContentLoaded', function() {
+    inicializarFiltros();
+});
+
+// Función para cargar asistencias desde Firebase
+async function cargarAsistenciasDesdeFirebase() {
+    try {
+        const querySnapshot = await getDocs(collection(db, "asistencias"));
+        asistenciasData = []; // Limpiar array
+        querySnapshot.forEach((doc) => {
+            asistenciasData.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        console.log('Asistencias cargadas desde Firebase:', asistenciasData);
+        
+        // Después de cargar, actualizar el filtro de clases
+        llenarFiltroClases();
+    } catch (error) {
+        console.error('Error cargando asistencias:', error);
+        // Si hay error, usar datos de ejemplo si existen
+        if (typeof asistenciasEjemplo !== 'undefined') {
+            asistenciasData = asistenciasEjemplo;
+            llenarFiltroClases();
+        }
+    }
+}
+
+// Llamar cuando se cargue la página
+window.addEventListener('load', function() {
+    inicializarPanel();
+});
+
+// Función para marcar ausentes automáticamente (ADAPTADA A TU CÓDIGO EXISTENTE)
+async function marcarAusentes(fecha = null, clase = null) {
+    if (!fecha) {
+        fecha = new Date().toISOString().split('T')[0]; // Fecha de hoy por defecto
+    }
+    
+    try {
+        // Si no se especifica clase, usar tu función existente obtenerClaseActual()
+        if (!clase) {
+            const claseActual = obtenerClaseActual(); // Usa TU función existente
+            if (!claseActual || claseActual.materia === "Sin clases" || claseActual.materia === "Fuera de horario") {
+                alert('No hay clase activa en este momento');
+                console.log('No hay clase activa en este momento');
+                return;
+            }
+            clase = claseActual.materia;
+        }
+        
+        console.log(`Marcando ausentes para: ${clase} - ${fecha}`);
+        
+        // Obtener todos los alumnos
+        const todosLosAlumnos = alumnosData.length > 0 ? alumnosData : alumnosEjemplo;
+        
+        if (!todosLosAlumnos || todosLosAlumnos.length === 0) {
+            alert('No hay lista de alumnos disponible');
+            return;
+        }
+        
+        // Obtener asistencias existentes para esta fecha y clase
+        const asistenciasExistentes = asistenciasData.filter(a => 
+            a.fecha === fecha && a.clase === clase
+        );
+        
+        console.log('Asistencias existentes:', asistenciasExistentes);
+        
+        // Encontrar alumnos que no tienen asistencia registrada
+        const alumnosPresentes = asistenciasExistentes.map(a => a.alumno);
+        const alumnosAusentes = todosLosAlumnos.filter(alumno => 
+            !alumnosPresentes.includes(alumno.nombre)
+        );
+        
+        console.log('Alumnos ausentes encontrados:', alumnosAusentes);
+        
+        if (alumnosAusentes.length === 0) {
+            alert('Todos los estudiantes ya tienen asistencia registrada para esta clase');
+            return;
+        }
+        
+        // Confirmar antes de marcar ausentes
+        const confirmacion = confirm(
+            `¿Deseas marcar como AUSENTES a ${alumnosAusentes.length} estudiantes que no tienen registro para la clase de ${clase}?\n\n` +
+            `Estudiantes a marcar: ${alumnosAusentes.map(a => a.nombre).join(', ')}`
+        );
+        
+        if (!confirmacion) {
+            return;
+        }
+        
+        // Marcar como ausentes a los que no tienen registro
+        let marcadosExitosamente = 0;
+        
+        for (const alumno of alumnosAusentes) {
+            const nuevaAsistencia = {
+                alumno: alumno.nombre,
+                fecha: fecha,
+                clase: clase,
+                hora: new Date().toLocaleTimeString('es-ES', { hour12: false }).substring(0, 5),
+                estado: 'ausente',
+                marcadoAutomaticamente: true,
+                createdAt: new Date()
+            };
+            
+            try {
+                // Guardar en Firestore
+                const docRef = await addDoc(collection(db, "asistencias"), nuevaAsistencia);
+                nuevaAsistencia.id = docRef.id;
+                
+                // Agregar al array local
+                asistenciasData.push(nuevaAsistencia);
+                marcadosExitosamente++;
+                
+                console.log(`Marcado como ausente: ${alumno.nombre}`);
+            } catch (error) {
+                console.error(`Error marcando ausente a ${alumno.nombre}:`, error);
+            }
+        }
+        
+        // Actualizar la interfaz
+        actualizarTablaAsistencias();
+        actualizarResumen();
+        llenarFiltroClases();
+        
+        alert(`✅ Se marcaron ${marcadosExitosamente} estudiantes como ausentes para la clase de ${clase}`);
+        
+    } catch (error) {
+        console.error('Error marcando ausentes:', error);
+        alert('❌ Error al marcar ausentes: ' + error.message);
+    }
+}
+
+// Función para marcar ausentes al final de la clase (ADAPTADA)
+function marcarAusentesFinClase() {
+    const claseActual = obtenerClaseActual(); // Usa TU función existente
+    
+    if (!claseActual || claseActual.materia === "Sin clases" || claseActual.materia === "Fuera de horario") {
+        alert('No hay una clase activa en este momento');
+        return;
+    }
+    
+    const confirmacion = confirm(
+        `¿Deseas marcar como ausentes a los estudiantes que no asistieron a la clase actual?\n\n` +
+        `📚 Clase: ${claseActual.materia}\n` +
+        `👨‍🏫 Profesor: ${claseActual.profesor}\n` +
+        `🕒 Horario: ${claseActual.horario}`
+    );
+    
+    if (confirmacion) {
+        marcarAusentes(null, claseActual.materia);
+    }
+}
+
+// Función para marcar ausentes por fecha y clase específica
+function marcarAusentesPersonalizado() {
+    const fecha = prompt('Ingresa la fecha (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+    if (!fecha) return;
+    
+    // Validar formato de fecha
+    const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!fechaRegex.test(fecha)) {
+        alert('Formato de fecha inválido. Usa YYYY-MM-DD');
+        return;
+    }
+    
+    const clase = prompt('Ingresa el nombre de la clase:');
+    if (!clase) return;
+    
+    marcarAusentes(fecha, clase);
+}
+
+// Función para verificar ausencias programáticamente (sin interferir con tu timer existente)
+function verificarYMarcarAusentes() {
+    const claseActual = obtenerClaseActual(); // Usa TU función existente
+    
+    if (claseActual && claseActual.materia !== "Sin clases" && claseActual.materia !== "Fuera de horario") {
+        // Verificar si la clase está por terminar (últimos 5 minutos)
+        const ahora = new Date();
+        const finClase = claseActual.fin;
+        
+        if (finClase) {
+            const tiempoRestante = finClase.getTime() - ahora.getTime();
+            const minutosRestantes = Math.floor(tiempoRestante / (1000 * 60));
+            
+            // Si quedan 5 minutos o menos, ofrecer marcar ausentes
+            if (minutosRestantes <= 5 && minutosRestantes > 0) {
+                const pregunta = confirm(
+                    `La clase de ${claseActual.materia} está por terminar en ${minutosRestantes} minutos.\n\n` +
+                    `¿Deseas marcar ausentes ahora?`
+                );
+                
+                if (pregunta) {
+                    marcarAusentes(null, claseActual.materia);
+                }
+            }
+        }
+    }
+}
+
+// Función para obtener estadísticas de ausencias por alumno
+function obtenerEstadisticasAusencias(fechaInicio = null, fechaFin = null) {
+    let asistenciasFiltradas = asistenciasData;
+    
+    if (fechaInicio) {
+        asistenciasFiltradas = asistenciasFiltradas.filter(a => a.fecha >= fechaInicio);
+    }
+    if (fechaFin) {
+        asistenciasFiltradas = asistenciasFiltradas.filter(a => a.fecha <= fechaFin);
+    }
+    
+    const estadisticas = {};
+    
+    asistenciasFiltradas.forEach(asistencia => {
+        if (!estadisticas[asistencia.alumno]) {
+            estadisticas[asistencia.alumno] = {
+                presente: 0,
+                ausente: 0,
+                tarde: 0,
+                total: 0
+            };
+        }
+        
+        estadisticas[asistencia.alumno][asistencia.estado]++;
+        estadisticas[asistencia.alumno].total++;
+    });
+    
+    return estadisticas;
+}
+
+// Función para mostrar reporte de ausencias
+function mostrarReporteAusencias() {
+    const estadisticas = obtenerEstadisticasAusencias();
+    
+    if (Object.keys(estadisticas).length === 0) {
+        alert('No hay datos de asistencia para generar el reporte');
+        return;
+    }
+    
+    let reporte = '📊 REPORTE DE AUSENCIAS:\n\n';
+    
+    // Ordenar por porcentaje de ausencias (de mayor a menor)
+    const alumnosOrdenados = Object.entries(estadisticas).sort((a, b) => {
+        const porcentajeA = (a[1].ausente / a[1].total) * 100;
+        const porcentajeB = (b[1].ausente / b[1].total) * 100;
+        return porcentajeB - porcentajeA;
+    });
+    
+    alumnosOrdenados.forEach(([alumno, stats]) => {
+        const porcentajeAusencias = ((stats.ausente / stats.total) * 100).toFixed(1);
+        const porcentajeAsistencia = (((stats.presente + stats.tarde) / stats.total) * 100).toFixed(1);
+        
+        reporte += `👤 ${alumno}:\n`;
+        reporte += `    Presentes: ${stats.presente}\n`;
+        reporte += `    Ausentes: ${stats.ausente} (${porcentajeAusencias}%)\n`;
+        reporte += `    Tardes: ${stats.tarde}\n`;
+        reporte += `    Asistencia: ${porcentajeAsistencia}%\n`;
+        reporte += `    Total clases: ${stats.total}\n\n`;
+    });
+    
+    alert(reporte);
+}
+
+// Exportar funciones al scope global
+window.marcarAusentes = marcarAusentes;
+window.marcarAusentesFinClase = marcarAusentesFinClase;
+window.marcarAusentesPersonalizado = marcarAusentesPersonalizado;
+window.verificarYMarcarAusentes = verificarYMarcarAusentes;
+window.obtenerEstadisticasAusencias = obtenerEstadisticasAusencias;
+window.mostrarReporteAusencias = mostrarReporteAusencias;
+// Inicializar verificación automática cuando se carga la página
+
+
+
+// Función mejorada para actualizar estadísticas con más detalles
+function actualizarResumenDetallado(datos = asistenciasData) {
+    // Filtrar datos de hoy si no se especifica otra cosa
+    const hoy = new Date().toISOString().split('T')[0];
+    const datosHoy = datos.filter(a => a.fecha === hoy);
+    
+    // Contar por estado
+    const presentes = datosHoy.filter(a => a.estado === 'presente').length;
+    const ausentes = datosHoy.filter(a => a.estado === 'ausente').length;
+    const tardes = datosHoy.filter(a => a.estado === 'tarde').length;
+    const total = datosHoy.length;
+    
+    // Calcular porcentaje de asistencia (presentes + tardes = asistieron)
+    const asistieron = presentes + tardes;
+    const porcentaje = total > 0 ? Math.round((asistieron / total) * 100) : 0;
+    
+    // Actualizar elementos del DOM
+    const elementos = {
+        'totalAlumnos': total,
+        'totalPresentes': presentes,
+        'totalAusentes': ausentes,
+        'totalTardes': tardes,
+        'porcentajeAsistencia': porcentaje + '%'
+    };
+    
+    Object.entries(elementos).forEach(([id, valor]) => {
+        const elemento = document.getElementById(id);
+        if (elemento) {
+            elemento.textContent = valor;
+            
+            // Agregar efectos visuales según el valor
+            if (id === 'porcentajeAsistencia') {
+                elemento.parentElement.style.background = 
+                    porcentaje >= 80 ? '#d4edda' : 
+                    porcentaje >= 60 ? '#fff3cd' : '#f8d7da';
+                elemento.parentElement.style.color = 
+                    porcentaje >= 80 ? '#155724' : 
+                    porcentaje >= 60 ? '#856404' : '#721c24';
+            }
+        }
+    });
+    
+    // Mostrar alertas si hay muchas ausencias
+    if (total > 0 && (ausentes / total) > 0.3) {
+        mostrarAlertaAusencias(ausentes, total);
+    }
+}
+
+// Función para mostrar alerta de ausencias altas
+function mostrarAlertaAusencias(ausentes, total) {
+    const porcentajeAusencias = Math.round((ausentes / total) * 100);
+    
+    // Crear o actualizar elemento de alerta
+    let alerta = document.getElementById('alertaAusencias');
+    if (!alerta) {
+        alerta = document.createElement('div');
+        alerta.id = 'alertaAusencias';
+        alerta.style.cssText = `
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #f5c6cb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        `;
+        
+        const resumenContainer = document.querySelector('.form-container');
+        if (resumenContainer) {
+            resumenContainer.appendChild(alerta);
+        }
+    }
+    
+
+}
+
+// Función para obtener resumen de asistencia por clase
+function obtenerResumenPorClase(fecha = null) {
+    if (!fecha) {
+        fecha = new Date().toISOString().split('T')[0];
+    }
+    
+    const asistenciasFecha = asistenciasData.filter(a => a.fecha === fecha);
+    const resumenPorClase = {};
+    
+    asistenciasFecha.forEach(asistencia => {
+        if (!resumenPorClase[asistencia.clase]) {
+            resumenPorClase[asistencia.clase] = {
+                presente: 0,
+                ausente: 0,
+                tarde: 0,
+                total: 0
+            };
+        }
+        
+        resumenPorClase[asistencia.clase][asistencia.estado]++;
+        resumenPorClase[asistencia.clase].total++;
+    });
+    
+    return resumenPorClase;
+}
+
+
+// Función para mostrar resumen detallado por clase
+function mostrarResumenPorClase() {
+    const resumen = obtenerResumenPorClase();
+    let mensaje = 'RESUMEN POR CLASE (HOY):\n\n';
+    
+    if (Object.keys(resumen).length === 0) {
+        mensaje += 'No hay asistencias registradas para hoy.';
+    } else {
+        Object.entries(resumen).forEach(([clase, stats]) => {
+            const porcentaje = Math.round(((stats.presente + stats.tarde) / stats.total) * 100);
+            mensaje += `📚 ${clase}:\n`;
+            mensaje += `   ✅ Presentes: ${stats.presente}\n`;
+            mensaje += `   ❌ Ausentes: ${stats.ausente}\n`;
+            mensaje += `   ⚠️ Tardes: ${stats.tarde}\n`;
+            mensaje += `   📊 Asistencia: ${porcentaje}%\n\n`;
+        });
+    }
+    
+    alert(mensaje);
+}
+
+// Actualizar la función de resumen original para usar la nueva
+function actualizarResumen(datos = asistenciasData) {
+    actualizarResumenDetallado(datos);
+}
+
+// Exportar nuevas funciones
+window.actualizarResumenDetallado = actualizarResumenDetallado;
+window.obtenerResumenPorClase = obtenerResumenPorClase;
+window.mostrarResumenPorClase = mostrarResumenPorClase;
+window.mostrarAlertaAusencias = mostrarAlertaAusencias;

@@ -54,28 +54,56 @@
 
             <!-- Filtros -->
             <div class="filtros">
-                <h4> Filtros</h4>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Fecha:</label>
-                        <input type="date" id="filtroFecha">
-                    </div>
-                    <div class="form-group">
-                        <label>Clase:</label>
-                        <select id="filtroClase">
-                            <option value="">Todas las clases</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Estado:</label>
-                        <select id="filtroEstado">
-                            <option value="">Todos</option>
-                            <option value="presente">Presentes</option>
-                            <option value="ausente">Ausentes</option>
-                        </select>
-                    </div>
-                </div>
+                <h4>Filtros</h4>
+            <div class="form-row">
+            <div class="form-group">
+                <label>Fecha:</label>
+                <input type="date" id="filtroFecha">
             </div>
+            <div class="form-group">
+                <label>Clase:</label>
+                <select id="filtroClase">
+                    <option value="">Todas las clases</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Estado:</label>
+                <select id="filtroEstado">
+                    <option value="">Todos</option>
+                    <option value="presente">Presentes</option>
+                    <option value="tarde">Tardes</option>
+                    <option value="ausente">Ausentes</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button onclick="limpiarFiltros()" class="btn" style="background: #6c757d; color: white; margin-top: 24px;">
+                 Limpiar Filtros
+                </button>
+            </div>
+            </div>
+            </div>
+
+            <!-- Controles de Ausencias -->
+<div class="controles-ausencias" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+    <h4> Control de Ausencias</h4>
+    <div class="form-row" style="gap: 10px; align-items: center;">
+        <button onclick="marcarAusentesFinClase()" class="btn btn-warning" style="background: #ffc107; color: #212529;">
+             Marcar Ausentes (Clase Actual)
+        </button>
+        <button onclick="marcarAusentesPersonalizado()" class="btn btn-info" style="background: #17a2b8; color: white;">
+             Marcar Ausentes (Personalizado)
+        </button>
+        <button onclick="mostrarReporteAusencias()" class="btn btn-secondary" style="background: #6c757d; color: white;">
+             Reporte de Ausencias
+        </button>
+        <button onclick="abrirModal()" class="btn btn-add" style="background: #28a745; color: white;">
+             Agregar Asistencia Manual
+        </button>
+    </div>
+    <small style="color: #6c757d; display: block; margin-top: 8px;">
+        Nuestro sistema marca automáticamente como ausentes a los estudiantes sin registro al final de cada clase
+    </small>
+</div>
 
             <!-- Resumen de asistencias -->
             <div class="form-container">
