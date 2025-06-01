@@ -639,17 +639,17 @@ window.addEventListener("beforeunload", () => {
 //   }
 // });
 
-// Coordenadas de la escuela
-// const COORDENADAS_ESCUELA = {
-//   latitud: 20.134443, //20.119646,  // Coordenadas del salon
-//   longitud:  -98.766191,// -98.779359,
-//   radio: 100 // Radio en metros permitido
-// };
+//Coordenadas de la escuela
+//const COORDENADAS_ESCUELA = {
+//  latitud: 20.134443, //20.119646,  // Coordenadas del salon
+//  longitud:  -98.766191,// -98.779359,
+//  radio: 100 // Radio en metros permitido
+//};
 
 const COORDENADAS_ESCUELA = {
-  latitud: 20.134443, //20.119646,  // Coordenadas del salon
-  longitud: -98.766191,// -98.779359,
-  radio: 1000 // Radio en metros permitido
+  latitud: 20.119646,  // Coordenadas del salon
+  longitud: -98.779359,
+  radio: 5 // Radio en metros permitido
 };
 
 // Función para calcular distancia entre dos puntos geo en metros
