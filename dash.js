@@ -1,6 +1,6 @@
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-auth.js";
-import { onSnapshot, doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js";
+import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js";
 
 const infoAlumno = document.getElementById("infoAlumno");
 const contenidoAlumno = document.getElementById("contenidoAlumno");
@@ -13,8 +13,6 @@ const listasProfesor = document.getElementById("listasProfesor");
 let usuarioActual = null;
 let qrActual = null;
 let dispositivoId = null;
-let unsubscribeAsistencias = null;
-
 
 
 // Horarios de clases por día
@@ -139,6 +137,7 @@ function obtenerClaseActual() {
   return { dia: diaActual, clase: "Fuera de horario", horario: "N/A" };
 }
 
+
 // Cargar QRCode desde CDN
 function cargarQRCode() {
   return new Promise((resolve, reject) => {
@@ -220,141 +219,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+
 async function cargarAsistenciasAlumno(nombreCompleto) {
   try {
-    // Si ya hay un listener activo, lo desuscribimos primero
-    if (unsubscribeAsistencias) {
-      unsubscribeAsistencias();
-    }
-
     const q = query(collection(db, "asistencias"), where("nombreCompleto", "==", nombreCompleto));
-    
-    // Usar onSnapshot en lugar de getDocs para escuchar cambios en tiempo real
-    unsubscribeAsistencias = onSnapshot(q, (querySnapshot) => {
-      listaAsistencias.innerHTML = "";
-      
-      if (querySnapshot.empty) {
-        const li = document.createElement("li");
-        li.textContent = "No hay asistencias registradas";
-        listaAsistencias.appendChild(li);
-      } else {
-        // Convertir a array y ordenar por fecha (más reciente primero)
-        const asistencias = [];
-        querySnapshot.forEach((doc) => {
-          asistencias.push(doc.data());
-        });
-        
-        // Ordenar por fecha descendente (opcional)
-        asistencias.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-        
-        asistencias.forEach((asistencia) => {
-          const li = document.createElement("li");
-          li.className = "asistencia-registrada";
-          li.innerHTML = `
-            <span class="fecha">${asistencia.fecha}</span> - 
-            <span class="clase">${asistencia.clase}</span> - 
-            <span class="hora">${asistencia.hora}</span>
-            <span class="estado">✓ Registrada</span>
-          `;
-          listaAsistencias.appendChild(li);
-        });
-      }
-    }, (error) => {
-      console.error("Error escuchando asistencias:", error);
-      listaAsistencias.innerHTML = "<li>Error cargando asistencias</li>";
-    });
-    
-  } catch (error) {
-    console.error("Error configurando listener de asistencias:", error);
-  }
-}
-
-// Función para limpiar el listener cuando sea necesario
-function limpiarListenerAsistencias() {
-  if (unsubscribeAsistencias) {
-    unsubscribeAsistencias();
-    unsubscribeAsistencias = null;
-  }
-}
-
-async function verificarAsistenciaExistente(nombreCompleto, clase, fecha) {
-  try {
-    const q = query(
-      collection(db, "asistencias"), 
-      where("nombreCompleto", "==", nombreCompleto),
-      where("clase", "==", clase),
-      where("fecha", "==", fecha)
-    );
     const querySnapshot = await getDocs(q);
-    return !querySnapshot.empty;
+
+    listaAsistencias.innerHTML = "";
+    
+    if (querySnapshot.empty) {
+      const li = document.createElement("li");
+      li.textContent = "No hay asistencias registradas";
+      listaAsistencias.appendChild(li);
+    } else {
+      querySnapshot.forEach((doc) => {
+        const asistencia = doc.data();
+        const li = document.createElement("li");
+        li.textContent = `${asistencia.fecha} - ${asistencia.clase} - ${asistencia.hora}`;
+        listaAsistencias.appendChild(li);
+      });
+    }
   } catch (error) {
-    console.error("Error verificando asistencia existente:", error);
-    return false;
+    console.error("Error cargando asistencias:", error);
   }
 }
-
-// Función para mostrar el estado de registro para la clase actual
-async function mostrarEstadoClaseActual(nombreCompleto, claseActual, fechaActual) {
-  const yaRegistrado = await verificarAsistenciaExistente(nombreCompleto, claseActual, fechaActual);
-  
-  const estadoDiv = document.getElementById('estado-clase-actual') || createEstadoDiv();
-  
-  if (yaRegistrado) {
-    estadoDiv.innerHTML = `
-      <div class="alerta-ya-registrado">
-        <span class="icono">⚠️</span>
-        <span class="mensaje">Ya tienes registrada tu asistencia para la clase: <strong>${claseActual}</strong></span>
-      </div>
-    `;
-    estadoDiv.className = 'estado-ya-registrado';
-  } else {
-    estadoDiv.innerHTML = `
-      <div class="alerta-pendiente">
-        <span class="icono">📋</span>
-        <span class="mensaje">Escanea el código QR para registrar tu asistencia en: <strong>${claseActual}</strong></span>
-      </div>
-    `;
-    estadoDiv.className = 'estado-pendiente';
-  }
-  
-  return yaRegistrado;
-}
-
-function createEstadoDiv() {
-  const estadoDiv = document.createElement('div');
-  estadoDiv.id = 'estado-clase-actual';
-  // Insertar antes del escáner QR o donde consideres apropiado
-  const container = document.querySelector('.scanner-container') || document.body;
-  container.insertBefore(estadoDiv, container.firstChild);
-  return estadoDiv;
-}
-
-
-
-
-//async function cargarAsistenciasAlumno(nombreCompleto) {
-//  try {
-//    const q = query(collection(db, "asistencias"), where("nombreCompleto", "==", nombreCompleto));
-//    const querySnapshot = await getDocs(q);
-//
-//    listaAsistencias.innerHTML = "";
-//    
-//    if (querySnapshot.empty) {
-//      const li = document.createElement("li");
-//      li.textContent = "No hay asistencias registradas";
-//      listaAsistencias.appendChild(li);
-//    } else {
-//      querySnapshot.forEach((doc) => {
-//        const asistencia = doc.data();
-//        const li = document.createElement("li");
-//        li.textContent = `${asistencia.fecha} - ${asistencia.clase} - ${asistencia.hora}`;
-//        listaAsistencias.appendChild(li);
-//      });
-//    }
-//  } catch (error) {
-//    console.error("Error cargando asistencias:", error);
-//  }
-//}
 
 async function cargarAsistenciasProfesor() {
   try {
@@ -639,10 +527,11 @@ window.addEventListener("beforeunload", () => {
 //   }
 // });
 
+
 const COORDENADAS_ESCUELA = {
   latitud: 20.119646,  // Coordenadas del salon
-  longitud: -98.779359,
-  radio: 5 // Radio en metros permitido
+  longitud:  -98.779359,
+  radio: 10 // Radio en metros permitido
 };
 
 // Función para calcular distancia entre dos puntos geo en metros
