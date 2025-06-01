@@ -531,7 +531,7 @@ window.addEventListener("beforeunload", () => {
 const COORDENADAS_ESCUELA = {
   latitud: 20.119646,  // Coordenadas del salon
   longitud:  -98.779359,
-  radio: 10 // Radio en metros permitido
+  radio: 5 // Radio en metros permitido
 };
 
 // Función para calcular distancia entre dos puntos geo en metros
