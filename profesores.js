@@ -1365,8 +1365,72 @@ function actualizarResumen(datos = asistenciasData) {
     actualizarResumenDetallado(datos);
 }
 
+async function generarReportePDF() {
+    const { jsPDF } = window.jspdf; // Importar jsPDF
+
+    const filtroFecha = document.getElementById('filtroFecha');
+    const fechaSeleccionada = filtroFecha ? filtroFecha.value : new Date().toISOString().split('T')[0];
+
+    // Filtrar asistencias por la fecha seleccionada
+    const asistenciasFiltradas = asistenciasData.filter(a => a.fecha === fechaSeleccionada);
+
+    // Obtener todos los alumnos
+    const todosLosAlumnos = alumnosData.length > 0 ? alumnosData : alumnosEjemplo;
+
+    // Crear un objeto para almacenar el reporte
+    const reporte = {
+        presentes: [],
+        ausentes: []
+    };
+
+    // Llenar el reporte
+    todosLosAlumnos.forEach(alumno => {
+        const asistencia = asistenciasFiltradas.find(a => a.alumno === alumno.nombre);
+        if (asistencia) {
+            reporte.presentes.push(alumno.nombre);
+        } else {
+            reporte.ausentes.push(alumno.nombre);
+        }
+    });
+
+    // Crear un nuevo documento PDF
+    const doc = new jsPDF();
+
+    // Agregar título
+    doc.setFontSize(18);
+    doc.text(`Reporte de Asistencias para el ${fechaSeleccionada}`, 10, 10);
+    doc.setFontSize(12);
+    doc.text('Presentes:', 10, 20);
+    
+    // Agregar lista de presentes
+    if (reporte.presentes.length > 0) {
+        reporte.presentes.forEach((nombre, index) => {
+            doc.text(`- ${nombre}`, 10, 30 + (index * 10));
+        });
+    } else {
+        doc.text('Nadie asistió.', 10, 30);
+    }
+
+    // Agregar lista de ausentes
+    doc.text('\nAusentes:', 10, 50 + (reporte.presentes.length * 10));
+    if (reporte.ausentes.length > 0) {
+        reporte.ausentes.forEach((nombre, index) => {
+            doc.text(`- ${nombre}`, 10, 60 + (index * 10 + (reporte.presentes.length * 10)));
+        });
+    } else {
+        doc.text('Todos asistieron.', 10, 60 + (reporte.presentes.length * 10));
+    }
+
+    // Descargar el PDF
+    doc.save(`reporte_asistencias_${fechaSeleccionada}.pdf`);
+    mostrarNotificacion('Reporte PDF generado y descargado correctamente', 'success');
+}
+
+
+
 // Exportar nuevas funciones
 window.actualizarResumenDetallado = actualizarResumenDetallado;
 window.obtenerResumenPorClase = obtenerResumenPorClase;
 window.mostrarResumenPorClase = mostrarResumenPorClase;
 window.mostrarAlertaAusencias = mostrarAlertaAusencias;
+window.generarReportePDF = generarReportePDF;

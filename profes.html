@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Control - Profesores</title>
     <link rel="stylesheet" href="styless.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 </head>
 <body>
@@ -93,8 +94,8 @@
         <button onclick="marcarAusentesPersonalizado()" class="btn btn-info" style="background: #17a2b8; color: white;">
              Marcar Ausentes (Personalizado)
         </button>
-        <button onclick="mostrarReporteAusencias()" class="btn btn-secondary" style="background: #6c757d; color: white;">
-             Reporte de Ausencias
+        <button onclick="generarReportePDF()" class="btn btn-secondary" style="background: #6c757d; color: white;">
+             Reporte De Asistencias
         </button>
         <button onclick="abrirModal()" class="btn btn-add" style="background: #28a745; color: white;">
              Agregar Asistencia Manual
