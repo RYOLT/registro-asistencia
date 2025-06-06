@@ -77,7 +77,7 @@ async function verificarDispositivoUnico(userId) {
       throw new Error("Este dispositivo ya está registrado con otra cuenta. Solo se permite una cuenta por dispositivo.");
     }
     
-    //Registrar o actualizar el dispositivo con el usuario actual
+    //Registrar o actualizar el dispositivo con el usuario actuale
     await setDoc(doc(db, "dispositivos", dispositivoId), {
       dispositivoId: dispositivoId,
       userId: userId,
@@ -525,8 +525,8 @@ window.addEventListener("beforeunload", () => {
 
 
 const COORDENADAS_ESCUELA = {
-  latitud: 20.134403,//20.119646,  // Coordenadas del salon
-  longitud:  -98.766111,//-98.779359,
+  latitud: 20.134322,//20.134403,//20.119646,  // Coordenadas del salon
+  longitud: -98.766224, //-98.766111,//-98.779359,
   radio: 1000 // Radio en metros permitido
 };
 

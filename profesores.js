@@ -753,57 +753,6 @@ function cerrarModal() {
 // Exportar función al scope global
 window.cerrarModal = cerrarModal;
 
-// Función para guardar asistencia
-// async function guardarAsistencia() {
-//     const modalAlumno = document.getElementById('modalAlumno');
-//     const modalFecha = document.getElementById('modalFecha');
-//     const modalClase = document.getElementById('modalClase');
-//     const modalHora = document.getElementById('modalHora');
-
-//     // Validar que los campos necesarios estén presentes
-//     if (!modalAlumno || !modalFecha || !modalClase || !modalHora) {
-//         alert('Error: Por favor completa todos los campos del formulario');
-//         return;
-//     }
-
-//     const alumno = modalAlumno.value;
-//     const fecha = modalFecha.value;
-//     const clase = modalClase.value;
-//     const hora = modalHora.value;
-
-//     // Validar que los campos tengan valores
-//     if (!alumno || !fecha || !clase || !hora) {
-//         alert('Por favor completa todos los campos');
-//         return;
-//     }
-
-//     // Crear un objeto de asistencia
-//     const nuevaAsistencia = {
-//         alumno,
-//         fecha,
-//         clase,
-//         hora,
-//         estado: 'presente', // Estado por defecto
-//         createdAt: new Date() // Agregar la fecha de creación
-//     };
-
-//     try {
-//         // Guardar en Firestore
-//         const docRef = await addDoc(collection(db, "asistencias"), nuevaAsistencia);
-//         nuevaAsistencia.id = docRef.id; // Agregar el ID del documento a la asistencia
-//         asistenciasData.push(nuevaAsistencia); // Agregar a la lista de asistencias
-
-//         // Actualizar la tabla de asistencias
-//         actualizarTablaAsistencias();
-
-//         alert('Asistencia agregada correctamente');
-//         cerrarModal();
-//     } catch (error) {
-//         console.error('Error guardando la asistencia:', error);
-//         alert('Fallo al registrar asistencia: ' + error.message);
-//     }
-// }
-
 async function guardarAsistencia() {
     const modalAlumno = document.getElementById('modalAlumno');
     const modalFecha = document.getElementById('modalFecha');
@@ -866,7 +815,7 @@ async function guardarAsistencia() {
             fecha: fecha,
             clase: clase,
             hora: hora,
-            estado: 'presente', // Estado por defecto
+            estado: 'ausente', // Estado por defecto
             createdAt: new Date() // Agregar la fecha de creación
         };
 
