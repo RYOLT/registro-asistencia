@@ -97,7 +97,9 @@ window.addEventListener('load', function() {
     cargarAlumnosDesdeFirebase();
     
     // Establecer fecha actual en filtros - con verificación
-    const fechaHoy = new Date().toISOString().split('T')[0];
+    //const fechaHoy = new Date().toISOString().split('T')[0];
+    const fechaHoy = new Date().toLocaleDateString('es-MX');
+
     const filtroFecha = getElementSafely('filtroFecha');
     const modalFecha = getElementSafely('modalFecha');
     const fechaInicio = getElementSafely('fechaInicio');
@@ -209,7 +211,7 @@ async function inicializarPanel() {
 
 function generarDatosEjemplo() {
     // Generar algunas asistencias de ejemplo para demostración
-    const fechaHoy = new Date().toISOString().split('T')[0];
+    const fechaHoy = new Date().toLocaleDateString('es-MX');//new Date().toISOString().split('T')[0];
     const claseActual = obtenerClaseActual();
     
     //asistenciasData = [
@@ -548,6 +550,8 @@ async function cargarAsistencias() {
             asistenciasData.push(asistencia);
         });
 
+        console.log("Asistencias gargadas:", asistenciasData)
+
         // Actualizar la tabla de asistencias después de cargar los datos
         actualizarTablaAsistencias();
     } catch (error) {
@@ -630,6 +634,11 @@ function actualizarTablaAsistencias(datosParaMostrar = asistenciasData) {
             'tarde': '⚠️',
             'ausente': '❌'
         };
+
+        // Manejar el caso donde asistencia.estado no está definido
+        const estadoTexto = asistencia.estado ? asistencia.estado.charAt(0).toUpperCase() + asistencia.estado.slice(1) : 'Desconocido';
+        const estadoBadgeClass = estadoClass[asistencia.estado] || 'badge-secondary'; // Clase por defecto
+        const estadoBadgeIcon = estadoIcon[asistencia.estado] || '❓'; // Icono por defecto
 
         row.innerHTML = `
             <td>${asistencia.alumno}</td>
@@ -776,27 +785,30 @@ async function guardarAsistencia() {
         return;
     }
 
-    // Verificar si el alumno ya ha registrado su asistencia
-    const asistenciaExistente = asistenciasData.find(a => 
-        a.alumno === alumno && a.fecha === fecha && a.clase === clase
-    );
-
-    if (asistenciaExistente) {
-        alert('Ya has registrado tu asistencia para esta clase en esta fecha.');
-        return; // No continuar si ya existe un registro
-    }
-
-    // Crear un objeto de asistencia
-    const nuevaAsistencia = {
-        alumno,
-        fecha,
-        clase,
-        hora,
-        estado: 'presente', // Estado por defecto
-        createdAt: new Date() // Agregar la fecha de creación
-    };
-
     try {
+        // Verificar si el alumno ya ha registrado su asistencia
+        const querySnapshot = await getDocs(query(
+            collection(db, "asistencias"),
+            where("alumno", "==", alumno),
+            where("fecha", "==", fecha),
+            where("clase", "==", clase)
+        ));
+
+        if (!querySnapshot.empty) {
+            alert('Ya has registrado tu asistencia para esta clase en esta fecha.');
+            return; // No continuar si ya existe un registro
+        }
+
+        // Crear un objeto de asistencia
+        const nuevaAsistencia = {
+            alumno,
+            fecha,
+            clase,
+            hora,
+            estado: 'presente', // Estado por defecto
+            createdAt: new Date() // Agregar la fecha de creación
+        };
+
         // Guardar en Firestore
         const docRef = await addDoc(collection(db, "asistencias"), nuevaAsistencia);
         nuevaAsistencia.id = docRef.id; // Agregar el ID del documento a la asistencia
@@ -805,34 +817,6 @@ async function guardarAsistencia() {
         // Actualizar la tabla de asistencias
         actualizarTablaAsistencias();
 
-        // Guardar la asistencia pasada y la de la nueva clase
-        const asistenciasPasadas = asistenciasData.filter(a => a.fecha < fecha);
-        const asistenciasNuevas = asistenciasData.filter(a => a.fecha >= fecha);
-
-        // Crear un objeto de asistencia pasada
-        const asistenciaPasada = {
-            alumno,
-            fecha: fecha,
-            clase: clase,
-            hora: hora,
-            estado: 'ausente', // Estado por defecto
-            createdAt: new Date() // Agregar la fecha de creación
-        };
-
-        // Crear un objeto de asistencia nueva
-        const asistenciaNueva = {
-            alumno,
-            fecha: fecha,
-            clase: clase,
-            hora: hora,
-            estado: 'presente', // Estado por defecto
-            createdAt: new Date() // Agregar la fecha de creación
-        };
-
-        // Guardar la asistencia pasada y la de la nueva clase en Firestore
-        await addDoc(collection(db, "asistencias_pasadas"), asistenciaPasada);
-        await addDoc(collection(db, "asistencias_nuevas"), asistenciaNueva);
-
         alert('Asistencia agregada correctamente');
         cerrarModal();
     } catch (error) {
@@ -840,6 +824,7 @@ async function guardarAsistencia() {
         alert('Fallo al registrar asistencia: ' + error.message);
     }
 }
+
 
 
 
@@ -1035,7 +1020,7 @@ window.addEventListener('load', function() {
 // Función para marcar ausentes automáticamente (ADAPTADA A TU CÓDIGO EXISTENTE)
 async function marcarAusentes(fecha = null, clase = null) {
     if (!fecha) {
-        fecha = new Date().toISOString().split('T')[0]; // Fecha de hoy por defecto
+        fecha = new Date().toLocaleDateString('es-MX');//new Date().toISOString().split('T')[0]; // Fecha de hoy por defecto
     }
     
     try {
@@ -1155,7 +1140,7 @@ function marcarAusentesFinClase() {
 
 // Función para marcar ausentes por fecha y clase específica
 function marcarAusentesPersonalizado() {
-    const fecha = prompt('Ingresa la fecha (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+    const fecha = prompt('Ingresa la fecha (YYYY-MM-DD):', new Date().toLocaleDateString('es-MX'));
     if (!fecha) return;
     
     // Validar formato de fecha
@@ -1276,7 +1261,7 @@ window.mostrarReporteAusencias = mostrarReporteAusencias;
 // Función mejorada para actualizar estadísticas con más detalles
 function actualizarResumenDetallado(datos = asistenciasData) {
     // Filtrar datos de hoy si no se especifica otra cosa
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoy = new Date().toLocaleDateString('es-MX');//new Date().toISOString().split('T')[0];
     const datosHoy = datos.filter(a => a.fecha === hoy);
     
     // Contar por estado
@@ -1354,7 +1339,7 @@ function mostrarAlertaAusencias(ausentes, total) {
 // Función para obtener resumen de asistencia por clase
 function obtenerResumenPorClase(fecha = null) {
     if (!fecha) {
-        fecha = new Date().toISOString().split('T')[0];
+        fecha = new Date().toLocaleDateString('es-MX');//new Date().toISOString().split('T')[0];
     }
     
     const asistenciasFecha = asistenciasData.filter(a => a.fecha === fecha);
@@ -1408,7 +1393,7 @@ async function generarReportePDF() {
     const { jsPDF } = window.jspdf; // Importar jsPDF
 
     const filtroFecha = document.getElementById('filtroFecha');
-    const fechaSeleccionada = filtroFecha ? filtroFecha.value : new Date().toISOString().split('T')[0];
+    const fechaSeleccionada = filtroFecha ? filtroFecha.value : new Date().toLocaleDateString('es-MX');//new Date().toISOString().split('T')[0];
 
     // Filtrar asistencias por la fecha seleccionada
     const asistenciasFiltradas = asistenciasData.filter(a => a.fecha === fechaSeleccionada);

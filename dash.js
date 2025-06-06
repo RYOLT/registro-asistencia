@@ -738,27 +738,30 @@ async function guardarAsistencia() {
         return;
     }
 
-    // Verificar si el alumno ya ha registrado su asistencia
-    const asistenciaExistente = asistenciasData.find(a => 
-        a.alumno === alumno && a.fecha === fecha && a.clase === clase
-    );
-
-    if (asistenciaExistente) {
-        alert('Ya has registrado tu asistencia para esta clase en esta fecha.');
-        return; // No continuar si ya existe un registro
-    }
-
-    // Crear un objeto de asistencia
-    const nuevaAsistencia = {
-        alumno,
-        fecha,
-        clase,
-        hora,
-        estado: 'presente', // Estado por defecto
-        createdAt: new Date() // Agregar la fecha de creación
-    };
-
     try {
+        // Verificar si el alumno ya ha registrado su asistencia
+        const querySnapshot = await getDocs(query(
+            collection(db, "asistencias"),
+            where("alumno", "==", alumno),
+            where("fecha", "==", fecha),
+            where("clase", "==", clase)
+        ));
+
+        if (!querySnapshot.empty) {
+            alert('Ya has registrado tu asistencia para esta clase en esta fecha.');
+            return; // No continuar si ya existe un registro
+        }
+
+        // Crear un objeto de asistencia
+        const nuevaAsistencia = {
+            alumno,
+            fecha,
+            clase,
+            hora,
+            estado: 'presente', // Estado por defecto
+            createdAt: new Date() // Agregar la fecha de creación
+        };
+
         // Guardar en Firestore
         const docRef = await addDoc(collection(db, "asistencias"), nuevaAsistencia);
         nuevaAsistencia.id = docRef.id; // Agregar el ID del documento a la asistencia
@@ -774,4 +777,5 @@ async function guardarAsistencia() {
         alert('Fallo al registrar asistencia: ' + error.message);
     }
 }
+
 
