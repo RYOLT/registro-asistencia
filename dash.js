@@ -525,8 +525,8 @@ window.addEventListener("beforeunload", () => {
 
 
 const COORDENADAS_ESCUELA = {
-  latitud: 20.134322, //20.134403,//20.119646,  // Coordenadas del salon
-  longitud: -98.766224, //-98.766111,//-98.779359,
+  latitud: 20.134403,//20.119646,  // Coordenadas del salon
+  longitud: -98.766111,//-98.779359,
   radio: 5000 // Radio en metros permitido
 };
 
